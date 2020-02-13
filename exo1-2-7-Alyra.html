@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8" />
+<script type="text/javascript">
+
+// thanks to https://www.youtube.com/watch?v=F95z5Wxd9ks
+
+var hash = (string, max) => { // max est le nombre d'entrées maximale dans la table
+var hash = 0;
+for (var i =0; i < string.length; i++) {
+/*
+ console.log('The character code ' + string.charAt(i) + " = " + string.charCodeAt(i));
+*/
+ hash += string.charCodeAt(i);
+}
+return hash % max; //le hash modulo la taille du tableau nous assure que la key sera dans la limite du tablau
+};
+
+
+let HashTable = function() {
+
+let storage = [];
+const storageLimit = 69; // en-dessous risque de collision
+this.print = function() {
+console.log(storage)
+}
+
+
+
+this.add = function(key, value) {
+var index = hash(key, storageLimit);
+if (storage[index] === undefined) { 
+// si  l'index est libre (compris entre 0 et StorageLimit -1) on y stocke la paire
+storage[index] = [
+[key, value]
+]; 
+} else { // si l'index n'est pas libre
+var inserted = false;
+for (var i=0; i < storage[index].length; i++) { // on parcourt chaque index de la table pour chercher à ..
+
+/* le plus simple
+if (storage[index][i][0] === key) {
+storage[index][i][1] = value; // ... écraser la value en fonction de la key- On évite 2 value pour la key London
+inserted = true; // 
+} // fin du if
+*/
+
+/*altern1
+if (storage[index][i][0] === key) {
+// On insérer la key à un index au hasard  pour éviter collision
+newindex=Math.round(Math.random() * (storageLimit -1 ));
+storage[newindex] = [
+[key, value]
+];
+inserted = true;
+} // fin du if
+*/
+
+/*altern2
+if (storage[index][i][0] === key) {
+storage[index].push([key + " Collision", value ]); // ... insérer la valeur et marqué la collision 
+inserted = true; // 
+} // fin du if
+*/
+
+
+if (storage[index][i][0] === key) {
+storage[index][i][1] = storage[index][i][1] + "," + value; // insérer la nouvelle valeur à la suite de l'autre de l''aautre
+inserted = true; 
+} 
+
+
+
+} // fin du for
+
+
+if (inserted == false) { // sinon on force
+storage[index].push([key, value]); // on autorise plusieurs paires par index pour tester collision
+}
+
+
+
+
+}
+};
+
+this.lookup = function(key) {
+var index = hash(key, storageLimit);
+if (storage[index] === undefined) {
+return undefined;
+} else {
+for (var i = 0; i < storage[index].length; i++) {
+if (storage[index][i][0] === key) {
+return storage[index][i][1];
+}
+}
+}
+};
+
+};
+
+/* ca marche à 69 mais difficilement en dessous 
+console.log(hash('Amsterdam',69)); 
+console.log(hash('Chennai',69)); 
+console.log(hash('Dallas',69)); 
+console.log(hash('Dallas, TX, USA',69)); 
+console.log(hash('Frankfurt',69)); 
+console.log(hash('Hong Kong',69)); 
+console.log(hash('London',69)); 
+console.log(hash('Melbourne',69)); 
+console.log(hash('Mexico City',69)); 
+console.log(hash('Milan',69)); 
+console.log(hash('Paris',69)); 
+console.log(hash('San Jose',69)); 
+console.log(hash('São Paulo',69)); 
+console.log(hash('Toronto',69));
+console.log(hash('Washington',69));
+*/ 
+
+
+let ht = new HashTable();
+ht.add('Amsterdam','153.8.223.72');
+ht.add('Chennai','169.38.84.49');
+ht.add('Dallas','169.46.49.112');
+ht.add('Dallas, TX, USA','184.173.213.169');
+ht.add('Frankfurt','184.173.213.169');
+ht.add('Hong Kong','119.81.134.212');
+ht.add('London','5.10.5.200');
+ht.add('London','158.176.81.249');
+ht.add('Melbourne','168.1.168.251');
+ht.add('Mexico City','169.57.7.230');
+ht.add('Milan','159.122.142.111');
+ht.add('Paris','159.8.78.42');
+ht.add('San Jose','192.169.217.197');
+ht.add('São Paulo','169.57.163.228');
+ht.add('Toronto','169.56.184.72');
+ht.add('Washington','50.87.69.166');
+/* special collision*/
+ht.add('chez moi!','127.0.0.1');
+ht.add('!iom zehc','127.0.0.2');
+ht.add('zehc !iom','127.0.0.3');
+
+
+ht.print();
+
+</script>
+<title>exo sur les Hashtable</title>
+
+</head>
+<body>
+
+</body>
+</html>
+
