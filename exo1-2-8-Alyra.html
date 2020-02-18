@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.9-1/crypto-js.min.js"></script>
+
+<script type="text/javascript">
+/* Écrire un programme qui étant donné des chaînes de caractères (A, B, C, D) crée l'arbre de merkle correspondant et l’affiche.
+Ci-dessous, A, B, C et D sont des chaînes de caractères saisies par l’utilisateur. 
+La première ligne représente les condensats des chaînes. La ligne suivante le résultat du hachage des deux condensats précédents...
+Exemple d’affichage:
+$ AbreMerkle lapin carotte champs arbre
+Jlwjeewljlewj hibbiuub3u23 nonqwiuhe773 3hoh3boy48
+Jb4ouhi3uh2 yrdrcy3t4cu25
+Hubipnhipb47440
+*/
+
+
+const txs = [
+  "lapin",
+  "carotte",
+  "champs",
+  "arbre",
+  "tempête", 
+  "civet",  
+  "champignons des bois",  
+  "repas de famille", 
+  "Bugs bunny",    
+  ]
+let hashedtxs = [],
+  branches = [],
+  branchCounter = 0,
+  merkleRoot
+
+if (txs.length == 0) {
+  console.log(`tableau vide`)
+} else {
+  console.log(`Entrées du tableau 	: ${txs}`)
+  makeEvenElements(txs)
+  console.log(`Feuilles: ${txs}`)
+  for (const tx of txs) {
+	 var hash = CryptoJS.SHA256(tx);
+	 var hash_Hex = hash.toString(CryptoJS.enc.Hex);
+    hashedtxs.push(hash_Hex.substring(0, 12)) 
+  }
+  console.log("Ligne 0 (les feuilles hashées avec l'algorithme SHA 256 mais dont on prend que les 12 premiers caractères )")
+  console.log(hashedtxs)
+
+  const rep = Math.ceil(Math.log2(txs.length))
+
+  for (let i = 0; i <= rep; i += 1) {
+    if (hashedtxs.length == 1) {
+      merkleRoot = hashedtxs[0]
+      console.log(`Le Merkle Root est ${merkleRoot}`)
+    } else if (branches.length == 1) {
+      merkleRoot = branches[0]
+      console.log(`Le Merkle Root est ${merkleRoot}`)
+    } else if (hashedtxs.length > 1 && branches.length == 0) {
+      hashedtxs.forEach((item, index) => {
+        if (index % 2 == 0) {
+
+			/* on concatène les deux hash */
+			var doublehash = hashedtxs[index].concat(hashedtxs[index + 1])
+			/* on calcule le hash de ces deux là  */
+			var hash = CryptoJS.SHA256(doublehash);
+	 		var hash_Hex = hash.toString(CryptoJS.enc.Hex);
+    		/* et on push */        
+          branches.push(hash_Hex.substring(0, 12))
+        }
+      })
+      console.log(`Ligne: ${(branchCounter += 1)}`)
+      console.log(branches)
+      if (branches.length > 1 && branches.length % 2 != 0) {
+        makeEvenElements(branches)
+        console.log(`Maintenant la ligne  ${branchCounter} est : `)
+        console.log(branches)
+      }
+    } else if (branches.length > 0) {
+      let branchesCopy = Array.from(branches)
+      branches = []
+      branchesCopy.forEach((item, index) => {
+        if (index % 2 == 0) {
+        
+			/*on concatène les deux branches */			        
+			var doublehash = branchesCopy[index].concat(branchesCopy[index + 1])
+			/* on calcule le hash de ces deux là  */
+			var hash = CryptoJS.SHA256(doublehash);
+	 		var hash_Hex = hash.toString(CryptoJS.enc.Hex);
+    		/* et on push */        
+          branches.push(hash_Hex.substring(0, 12))
+        }
+      })
+      console.log(`Ligne : ${(branchCounter += 1)}`)
+      console.log(branches)
+      if (branches.length > 1 && branches.length % 2 != 0) {
+        makeEvenElements(branches)
+        console.log(`Maintenant la ligne ${branchCounter} est : `)
+        console.log(branches)
+      }
+    }
+  }
+}
+
+function makeEvenElements(arr) {
+  if (arr.length > 1 && arr.length % 2 != 0) {
+    console.log("Nombre d'éléments impairs dans la table de départ")
+    console.log("il faut dupliquer le dernier élément pour obtenir un nombre pair")
+    arr.push(arr[arr.length - 1])
+  }
+}
+
+
+
+</script>
+<title>exo sur arbres de Merkel</title>
+
+</head>
+<body>
+
+</body>
+</html>
