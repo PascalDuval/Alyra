@@ -1,0 +1,44 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*
+
+def Vigenere(TexteaCrypter,  CleVigenere):
+    longueur=len(TexteaCrypter)
+    lgCle = len(CleVigenere)
+    Tab=[]
+    k=""  #groupe de lettres concaténées
+    i=0 #varie sur le TexteaCrypter
+    j=0 #varie sur la Clé de Vigenere
+    while i <longueur:
+        decalage = ord(CleVigenere[j % lgCle]) - ord('A') # On cherche le décalage de l'alphabet correspondant à la position j :   
+        k = k + chr((ord(TexteaCrypter[i]) - ord('A') + decalage) %26 + ord('A'))
+        Tab.append(k)  #on append le tableau         
+        i =i+1 
+        j= j+1
+        if i == longueur:
+           return(Tab[i-1])
+
+TexteaCrypter = "NECONFONDONSPASSECRETETMYSTERECESTUNEDISTINCTIONDECISIVELESECRETESTUNEINFORMATIONQUINESTCONNUEQUEDEQUELQUESUNSOUDUNSEULALALIMITEMAISQUECELUIOUCEUXQUILADETIENNENTPEUVENTATOUTMOMENTREVELERLESECRETESTACCESSIBLEATOUSCESTBIENPOURQUOIILYAUNPROBLEMEDUSECRETCEQUIFAITPROBLEMEDANSLESECRETCESTQUILPEUTETREDIVULGUETRAHIREVELEOEDIPEFINITPARDECHIFFRERLENIGMEDUSPHINXSIVOUSVOULEZPERCERLESSECRETSCESTLATACHEDELARAISONENUNSENSCESTLATACHEDELAPHILOSOPHIEAUCONTRAIRELEMYSTEREESTPARDEFINITIONDUNAUTREORDREQUELEPROBLEMEILESTINACCESSIBLEALARAISONDANSLESMYSTERESDELANTIQUITESEULSDERARESINITIESPARVIENNENTALACOMPREHENSIONDUMYSTEREETLECHRISTIANISMEESTBEAUCOUPPLUSRADICALENCORELEMYSTEREESTCEQUIESTABSOLUMENTINACCESSIBLEALARAISONTHOMASDAQUINLEPLUSGRANDTHEOLOGIENDETOUTELACHRETIENTEMEDIEVALEETLAREFERENCEENCOREAUJOURDHUIDETOUTELATHEOLOGIECHRETIENNEINSISTESURLEFAITQUELARATIONALITESARRETEAUSEUILDUMYSTERELEMYSTEREESTSACRESIVOUSPREFEREZILESTTRANSCENDANTILESTDIVINALORSQUELESECRETESTPROFANELESECRETESTIMMANENTALACONDITIONHUMAINEILESTHUMAINETCESTPOURQUOIFIDELEASAVOCATIONLAPROBLEMATISATIONLAREFLEXIONPHILOSOPHIQUEINTERROGELESECRETINTERROGELHUMANITEDUSECRETSICETAITUNMYSTEREELLENELINTERROGERAITPASLEMYSTERENESTPASUNECATEGORIEPHILOSOPHIQUESECRETESTIMMANENTALACONDITIONHUMAINEILESTHUMAINETCESTPOURQUOIFIDELEASAVOCATIONLAPROBLEMATISATIONLAREFLEXIONPHILOSOPHIQUEINTERROGELESECRETINTERROGELHUMANITEDUSECRETSICETAITUNMYSTEREELLENELINTERROGERAITPASLEMYSTERENESTPASUNECATEGORIEPHILOSOPHIQUE"
+
+CleVigenere = input("Clé de Vigenere: ")
+
+print("Le message codé avec cette clé est : " + Vigenere(TexteaCrypter.upper(),  CleVigenere.upper()))
+
+print("-----------------")
+
+def CleInverse (CleVigenere):
+    j = 0 #varie sur la Clé de Vigenere    *
+    k = ""  #groupe de lettres concaténées
+    Tab=[]
+    lgCle = len(CleVigenere)
+    while j <lgCle:
+        decalage = ord(CleVigenere[j]) - ord('A') # On cherche le décalage de l'alphabet correspondant à la position j :
+        k = k + chr(ord('Z') - decalage  + 1) # On fabrique la clé inverse de même longueur   
+        Tab.append(k)  #on append le tableau         
+        j= j+1
+        if j== lgCle:
+           return(Tab[j-1])
+
+
+print( "la clé de Vigenere inverse est " + CleInverse(CleVigenere.upper()))
+    
+print ("Le message décodé avec la clé de Vigenere inverse est : " +  Vigenere (Vigenere(TexteaCrypter.upper(), CleVigenere.upper()), CleInverse(CleVigenere.upper()) ))
