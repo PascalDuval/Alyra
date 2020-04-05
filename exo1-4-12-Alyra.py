@@ -40,7 +40,7 @@ def rechercheDebut(Debut, longueur) :
     
 
 if __name__ == "__main__":
-    print ("modèle de pow naîve : longueur du mot <= 8 - Debut du mot : [nx ex: 7c] ")
+    print ("modèle de pow naîve : longueur du mot <= 8 - Debut de l'hexa : [nx ex: 7f - 00 - 2b] ")
     longueur = int(input('Entrez une longueur [8 maxi] : '))
     Debut = str(input("Entrez un début de chaîne Hexa [2 caractères maxi] : ")) 
     Debut = Debut.lower()
@@ -53,3 +53,7 @@ if __name__ == "__main__":
 #percall : est égal à tottime/ncalls
 #cumtime : est le temps passé dans la fonction et les sous-fonctions1
 #filename :lineno(function) : donne l’information sur la fonction testée ainsi que sa position (fichier + numéro de ligne)
+
+
+#Je n'ai pas d'outil pour mesurer les performances en fonction de la fonction de hachage utilisée et de la longueur de la chaîne recherchée à part python -m cProfile programme.py en ligne de commande .. mais j'avoue ne pas trop savoir interpréter les résultats.
+#Suis preneur de la solution de cet exercice optionnel, y compris de la petite fonction de comparaison qui prend en entrée une fonction de hashage (md5, sha256, etc..)  :-)
