@@ -17,43 +17,59 @@ def chaineAlea(longueur):
         compteur += 1 #On incrémente le compteur de lettres
     data = ""
     data = mot.encode()
-    hash_object = hashlib.sha256(data)
+    hash_object = hashlib.sha256(data)  #on hashe le tout
     HashmotHexa = hash_object.hexdigest() 
-#    print ("HashmotHexa : ",  HashmotHexa)
-    return HashmotHexa
+    print ("Valeur du hash aléatoire :  " ,  HashmotHexa)    
+    scale = 16 ## hexadecimal
+    num_of_bits = 256
+    MotBin = bin(int(HashmotHexa, scale))[2:].zfill(num_of_bits)
+    print ("chaine en binaire équivalente à ce hash dans laquelle on recherche :  " ,  MotBin)
+    MotDecimalFromBin = int(MotBin, 2)  # Conversion en decimal à partir du bin 
+    print ("chaine en decimal équivalente à ce hash dans laquelle on recherche  :  " ,  MotDecimalFromBin)
+    return MotBin
 
-
-def rechercheDebut(Debut, longueur) :
+def rechercheDebut(Debut, longueur,  Essai) :
     chaine = chaineAlea(longueur)
-    print("chaine : ",  chaine)
-    if chaine.find(Debut) ==-1: #tant que le Debut n'est pas dans la chaine 
-        print("pas de présence de Debut dans la chaine ",  chaine)
-        rechercheDebut(Debut, longueur)  
+    if chaine.find(Debut) ==-1: #tant que le nonce n'est pas dans la chaine 
+        Essai +=1
+        print("pas de présence du nonce dans la chaine ")
+        print("--------------")
+        rechercheDebut(Debut, longueur,  Essai)         
     else :
             if chaine.find(Debut) !=0 : #si le Debut n'est pas au début de la chaine
-                print("Debut est dans la chaine mais pas au début .. ",  chaine)
-                rechercheDebut(Debut, longueur)
+                Essai +=1
+                Test = int(chaine, 2) <= chaineDecimale
+                print("Le nonce est-il trouvé au début ? : ",  Test )
+                print("--------------")
+                rechercheDebut(Debut, longueur,  Essai)
             else :
-                print("La chaîne trouvée est : ",  chaine )
-
-
+                Test = int(chaine, 2) <= chaineDecimale
+                print("Le nonce est-il trouvé au début ? : ",  Test )
+                print("Cette dernière chaîne obtenue termine notre preuve de travail ; elle est bien inférieure à la valeur fixée au départ par notre nonce : ",  chaineDecimale )
+                print("--------------")
+                print("Nombre d'essais effectifs pour résoudre ce problème  : ",  Essai )
     
 
 if __name__ == "__main__":
-    print ("modèle de pow naîve : longueur du mot <= 8 - Debut de l'hexa : [nx ex: 7f - 00 - 2b] ")
-    longueur = int(input('Entrez une longueur [8 maxi] : '))
-    Debut = str(input("Entrez un début de chaîne Hexa [2 caractères maxi] : ")) 
-    Debut = Debut.lower()
-    rechercheDebut( Debut, longueur )
+    print ("Le programme effectue une preuve de travail à partir de la recherche d'un certain début de chaine en binaire ne comprenant que des 0 dans une chaine aléatoire en binaire")
+    Nonce = str(input("Entrez un début de chaîne binaire de longueur variable [nx ex: 0 - 00 - 000 - 00000000] : ")) 
+    #ici on pourrait faire les vérifications d'usage
+    Essai =1
+    exposant = len(Nonce)
+    print ("exposant : ",  exposant)
+    chaineremplissage = '1' *  (256 - exposant)
+    chaineborne = Nonce + chaineremplissage
+    chaineDecimale = int(chaineborne, 2)
+    print("il s'agit de trouver en fait la première chaîne aléatoire inférieure en décimal à : ",  chaineDecimale)
+
+    Noncemaximal = '0' * 32
+    chaineremplissagemax = '1' *  (256 - 32)
+    chaineimaginaire = Noncemaximal  + chaineremplissagemax
+    print("Notabene 1 : si le nonce était utilisé entièrement sur 4 octets, la pow consisterait à  trouver la première chaine aléatoire inférieure en décimal à ",   int(chaineimaginaire, 2))    
+    print("Notabene 2 : La complexité étant exponentielle, il faudrait beaucoup plus d'essais, soit : ",   pow(2, 32))    
+
+    print("--------------")
+    print("Nombre d'essais en moyenne pour résoudre ce problème avec le nonce choisi : ",  pow(2, exposant) )
+    rechercheDebut(Nonce, 8,  Essai)
     
-#python -m cProfile fact.py en ligne de commande
-#Le rapport fournit présente plusieurs champs intéressants :
-#ncalls : le nombre d’appels de la fonction
-#tottime : founit le temps total en secondes passé dans la fonction en excluant les sous-fonctions
-#percall : est égal à tottime/ncalls
-#cumtime : est le temps passé dans la fonction et les sous-fonctions1
-#filename :lineno(function) : donne l’information sur la fonction testée ainsi que sa position (fichier + numéro de ligne)
 
-
-#Je n'ai pas d'outil pour mesurer les performances en fonction de la fonction de hachage utilisée et de la longueur de la chaîne recherchée à part python -m cProfile programme.py en ligne de commande .. mais j'avoue ne pas trop savoir interpréter les résultats.
-#Suis preneur de la solution de cet exercice optionnel, y compris de la petite fonction de comparaison qui prend en entrée une fonction de hashage (md5, sha256, etc..)  :-)
