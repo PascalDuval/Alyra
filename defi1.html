@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+<meta charset="utf-8" />
+<title>Fonctions de base defi 1 </title>
+</head>
+<body>
+
+
+<section>
+	<h3>Etant donné le prefixe sur 1 byte d'un VarInt en Hexa renvoie la substring correspondante </h3>
+	Chaine en Hexa :<input type="text" value="1800D7EA586400D7EA586400D7EA586400D7EA586400D7EA5864" id="chainehexa"><br>
+	Prefixe [sur 1 byte] en decimal : <span type="text" id="prefixe"></span><br>
+	Chaine extraite : <span type="text" id="substring"></span><br>
+	<button id="rameneSubstring">Extraire la sous chaine</button>
+</section>
+
+<script>
+//<= 0xfc	12	
+//<= 0xffff	fd1234	Prefix with fd, and the next 2 bytes is the VarInt (in little-endian).
+//<= 0xffffffff	fe12345678	Prefix with fe, and the next 4 bytes is the VarInt (in little-endian).
+//<= 0xffffffffffffffff	ff1234567890abcdef	Prefix with ff, and the next 8 bytes is the VarInt (in little-endian).
+
+
+	function extraction(chaine) { 
+			prefixe = chaine.substr(0, 2)
+			prefixedecimal = parseInt(prefixe, 16)
+			console.log("prefixe decimal : " + prefixedecimal);						
+			if (prefixedecimal <= 252) {
+			restant = chaine.substr(2, prefixedecimal * 2)	
+			}		
+			if (prefixedecimal == 253) {
+			restant = chaine.substr(2, prefixedecimal * 4)
+			}	
+			if (prefixedecimal == 254) {
+			restant = chaine.substr(2, prefixedecimal * 8)
+			}	
+			if (prefixedecimal == 255) {
+			restant = chaine.substr(2, prefixedecimal * 16)
+			}
+			if (prefixedecimal > 255) {
+			restant = 'Erreur'
+			}				
+				
+	return restant.toUpperCase()	
+	}
+	document.getElementById('rameneSubstring').addEventListener('click', event => {
+	chainehexa = document.getElementById('chainehexa').value
+	document.getElementById('prefixe').innerHTML = parseInt(chainehexa.substr(0, 2), 16)
+	prefixe = parseInt(chainehexa.substr(0, 2), 16)
+	console.log(prefixe)
+	document.getElementById('substring').innerHTML = extraction(chainehexa)
+})
+
+</script>
+
+<section>
+	<h3>Conversion hexadécimaux</h3>
+	Hexa Little Endian :<input type="text" value="000001FF" maxlength="64" id="hle"><br>
+	Hexadecimal : <span type="text" id="hexadecimal"></span><br>
+	Decimal : <span type="text" id="decimal"></span><br>
+	<button id="convertHexaLE">Convertir</button>
+</section>
+<script>
+
+	function convertHexaLittleEndianToHexa(h) {
+		if (h.length %2 == 1){
+			h= '0'+ h		
+		}
+		let retour = ""
+		for (var i = 0; i < h.length-1; i+=2) {
+			retour = h[i] + h[i+1] + retour		
+		}
+		return retour.toUpperCase() 	
+	}
+
+
+	document.getElementById('convertHexaLE').addEventListener('click', event => {
+	hle = document.getElementById('hle').value
+	hexa = convertHexaLittleEndianToHexa(hle)
+	document.getElementById('hexadecimal').innerHTML = '0x' + hexa
+	document.getElementById('decimal').innerHTML = parseInt(hexa, 16)
+})
+
+</script>
+
+<section>
+	<h3>Conversion Champ Bits -> Cible correspondante</h3>
+	Hexa Champs bits [4 bytes] :<input type="text" value="3218A517" id="hcb" maxlength="8"><br>
+	Exposant en hexa [1 byte] : <span type="text" id="exposant"></span><br>
+	Coefficient en hexa [3 bytes d'origine little endian] : <span type="text" id="coefficient"></span><br>
+	Cible en hexa  : <span type="text" id="cible"></span><br>
+	Cible en décimale  : <span type="text" id="cibledecimale"></span><br>
+	<strong>Difficulté de la cible </strong> : <span type="text" id="difficultecible"></span><br>
+	<button id="DecomposeEtrouveCible">Trouver la cible et calculer sa difficulté</button>
+</section>
+
+<script>
+
+	function decimalToHex(d, padding) {
+    	var hex = Number(d).toString(16).toUpperCase();
+    	padding = typeof (padding) === "undefined" || padding === null ? padding = 2 : padding;
+    		while (hex.length < padding) {
+        		hex = "0" + hex;
+    		}
+    return hex;
+	}	
+
+	function calculerDifficulte(cibleactuelle) {
+  		var ciblemax = (Math.pow(2,16) - 1) * Math.pow(2,208) // autrement dit 0xffff
+  		var Result = ciblemax / cibleactuelle	
+  return Result
+	}
+
+
+	function TrouveCible(exposant, coefficient) {		
+		coefficienthexa = convertHexaLittleEndianToHexa(coefficient) // il faut mettre le coefficient en little endian 
+		coefficientdecimal =parseInt(coefficienthexa, 16) 	 // puis chercher la valeur de coefficient en decimal 
+		exposantdecimal = exposant // puis récuper l'exposant en valeur decimale [ce qui est déjà fait]	
+		cibledecimale = coefficientdecimal * (2 ** (8 * (exposantdecimal -3)) )		
+		Cible = decimalToHex(cibledecimale, 32)  // on monte à 32 bytes
+	return Cible 
+	}
+	
+	document.getElementById('DecomposeEtrouveCible').addEventListener('click', event => {
+	hcb = document.getElementById('hcb').value
+	document.getElementById('exposant').innerHTML = '0x' + hcb.substr(6, 6)	
+	exposant = parseInt(document.getElementById('exposant').innerHTML, 16)  // exposant en decimal direct
+	document.getElementById('coefficient').innerHTML = hcb.substr(0, 6) // on transmet juste la chaine en hexa pour conversion little endian en hexa 		
+	coefficient = document.getElementById('coefficient').innerHTML
+	document.getElementById('coefficient').innerHTML = convertHexaLittleEndianToHexa(coefficient) // pour affichage
+	document.getElementById('cible').innerHTML = TrouveCible(exposant, coefficient) // on cherche la cible en hexa
+	document.getElementById('cibledecimale').innerHTML = parseInt(TrouveCible(exposant, coefficient),16) // on cherche la cible en decimale
+	cibleactuelle = document.getElementById('cibledecimale').innerHTML
+	document.getElementById('difficultecible').innerHTML = calculerDifficulte(cibleactuelle)
+	 		
+})
+</script>
+		
+<section>	
+	<h3>Etant donné un Bloc désérialiser son Header</h3>
+	Bloc :<input type="textarea" value="010000009500c43a25c624520b5100adf82cb9f9da72fd2447a496bc600b0000000000006cd862370395dedf1da2841ccda0fc489e3039de5f1ccddef0e834991a65600ea6c8cb4db3936a1ae31439910d01000000010000000000000000000000000000000000000000000000000000000000000000ffffffff0704b3936a1a017cffffffff01403d522a01000000434104563053b8900762f3d3e8725012d617d177e3c4af3275c3265a1908b434e0df91ec75603d0d8955ef040e5f68d5c36989efe21a59f4ef94a5cc95c99794a84492ac000000000100000001544bb26a50502ef11c745f1127b29a47856b3ecd9a1b6c540a66493d5fbf0046010000008b483045022100c9e35aa55af5ac98cb67c4db7cf3d3f128753c4698f5d25ca0cdc3decd0c46be02204d6dfe89bd3fe88a32d47a44c0ab3ab60d87b27b90106f1b2f9f67c9c60cc80c01410449b8d933f97a8c4fe6ce962ee2abff8a81d8cfc5e0870a50cea76c50d04addf2df09331c4a47cdc3bc27a628e766ef5d01f28ee147ed21723b5ff3a62ed8da3effffffff024094ef03010000001976a9146c8de651f8b92f87ff43fb9732babec784bdb6f588acc05d1626000000001976a9144f006767feebf6438aaf51ef86ae4286a1c571b988ac000000000100000001c03533907c967249c5dc80d266e6e65555581e6328f6a3859164bfbb1eb0bc17000000008b483045022100a616082b724043758a4732dae5461783cb48ccf1b36a7f98d41f3f5f8db577f80220084df7afc2c912c3ef23ea43cfec651ba97ee6c4e4220c0f58b78f374626bdfb01410412aebcb2c5d5625c138c9cdd318ae04a103002b0d1b1541d72cd51dc016bfec885e7b93d73375903acb2731cdb7790b1d969db2684646e6fbeabb0559b6513c1ffffffff024094ef03010000001976a914fa91e22c8a2a4d1fa592de1cf7aa8f958867a1d288acc05d1626000000001976a91452fc9e7e1b8be3a61fe20381cb343e62eac105cb88ac0000000001000000015f71a19a74e9f5d202b9dd552471f2e8a24fd883a76f23455f1e4b738fd2c20f000000008b483045022100b6f858814dbf6a6d2dc71701028361a9e9ef2e2c52e5898f1bfccfad145ccda7022046973784a8de9007a52576070621c29e92f91a332960a5fb7ded81973d2e7be4014104dd2755d0a38af359659614530bd25e35fcb3d215b1fc41038beb495ea5db774e71a2f307652774b79c5dfa8fdccff372e61a27a177c6b157cc22beec361cc387ffffffff0200688909000000001976a91473b81e77969678ba046c79b44829f769ff2e00f188ac40660301000000001976a914597588d391674d08c2cfc35015db9487922aba5288ac000000000100000001d1371f11cc10390fa0361f3e6b2e25e48c2f69040bf7d400d1b2ecf97b8461f0000000008b483045022061c083b63887398f85a527c8e256ee3498bc50fa6bc85d90ebf63c49ad406836022100884ffd73107b1129f378bfa29858d1e1c89f89922260a99a32a813572e3884460141044b32f0631083e1cc5f0401807abc7a12a715083297b86923675a8bf66bc6af0e82a184bed186896ce1059c9bb36e26b265536f4c9f181f570a53891ec9ba4a18ffffffff02804f470c000000001976a914afd883b5bd6ae5e88b39cc692db33a6ff7182dcb88ac00ca9a3b000000001976a9145539c2a8cee228ef366cb0e8f29e0079ce03874888ac000000000100000001b36bce13ff6be1d5bd81267f9a24b2636fae20e0a1a5ca6c469d1c0fbc56a1ef000000008a4730440220592616f1af3377a3cc7bc721745cf2657131759b35c40ae03820931062c061c802203fc4adb8d0da6bd4269f8331b21793304743015a735bcbb95298ad82595f40da014104dd182dfcc9eb893ea6a0f34cec5906fbb61008b6fd669b74414d2999bf49fd21f7eb775f6175234d79cf8b9d3ac749b2bb3673462cd94641bcf9e27fe2cfc08bffffffff02c09cca64000000001976a91494006d131d49dd5c766721d7fd1db65df86c539d88ac4030a779000000001976a91421136ba0c035bb72e736975f0f9410117cf050b588ac000000000100000003d572d1e1ff09a1df9c081417f9a225c16d8e94fca3cc0d3112761e5df11f33e2000000008c49304602210097f54a78861aa913ca1b76925107a26762d7405cfeaa19983a99fb61d99e5540022100ab1cd36486fb5598d67e15e9947f17d5dab53fdd013b0e9ca8b8ffb2f7f40e9e014104b5f0dfe1370e364f516d25e1524ea5eb8cb8afe7e0f739576283ffbcd7b8307f0f79459d34ce8f6386bc725b730c26f4e5996029824e48baed2ad75d8b916fd3ffffffff7c945863dc4cdb9c2e160e3653c8ab77a33b55f061df53507c0a406a07e33e5e010000008c493046022100e7eda51ba3eff04c1e5fdd93bf4397e0e652ce38c725b687554e1dccf562fdd80221009afa588cf5347cd7f50e4c097ffabe789a3c55235d8a2fd639b21d2a73b50fb8014104a105201abcc58f7773fc5d7125344038b5ca77571173ac4b5741f9b11f8b360f4e88ac887f680af7fde035295939145d868011e0b37e077cc5e5aa2b699f6030ffffffff1b1887532137b5c7ec5c141f5cb88dbf1465c578fb6491acc4d9ffade969bdbb010000008b4830450220630795aefe55d8be9111ee802841eae06a6b4aa6fa2356eb2d00142d93263465022100e9e1dc61dbaf1a3e4e57b84c8c515cdf7687ddf0e0d7b04036105da6cfcb2845014104a105201abcc58f7773fc5d7125344038b5ca77571173ac4b5741f9b11f8b360f4e88ac887f680af7fde035295939145d868011e0b37e077cc5e5aa2b699f6030ffffffff0180b2e60e000000001976a914c865d81683bd195f92e47c583b35ed0b6a37f6a388ac000000000100000002eec8c3317b0fb6c41a6d8332523f8ef4b74c98a963a1928ca9d280aa323d9dee000000008b483045022100fd606f480b20406c8da75f4640c940e441ff57442b982ca0b45ed4a55b622522022079de38e1baf58bc0dbe12938412bdd3cd7e0be71fa5b67eeca2b5b343aede45c01410466f4f8457e681710421c89e6577db1973485f11708ff062155bb34a3ef0e4423f052c5d4eb548e79647cff8f2d272b3a8cfe9f34025bc90c60652bd41ebb2d57ffffffffeec8c3317b0fb6c41a6d8332523f8ef4b74c98a963a1928ca9d280aa323d9dee010000008c4930460221008a34de93e3081bfb6e41f79f591851895cf9cb354775966b00769f7ba9e5fc02022100a8778d15080a07721fadb4ec63229677fdc09ce919c10edf5b50de46c8199ee301410412581a35fdf35e291fc14119096a4e0c8e4f4ecf5c6ede7f727aae7d859aa1ac1ae3d5f777740998352dd76e46f777026f8b9e6a10a98bcd70c6b0ca25e3a7fbffffffff02c0e1e400000000001976a914dba62e0fbc75a167491d075cbe916d4d95fb412e88ac00b4c404000000001976a9140a1d803e44f099d3c91d4b988d3c8a9fca5d4b5d88ac0000000001000000014395f5cf12900e99dd6192b6209b49b3450e566019ed408d99104dd200d41c59000000008b483045022100a4409279bcbae239067d4533ab66f60b814a7c736e0e493138573f58733bbf1002204bed71dcb9c0e761d6c301c8358ed65081c60644a48efef6c37baf9729e6fc2701410432a325c210a4f9bb5d1522b81011a51bac208bba644eee54b2c9fbcbd748a53ca04f57acd052b247a1ace735c414958a3e1fded493f4128207e00ea058ceff87ffffffff024016750c000000001976a914cdc0d731b176c3aa8ba0ae0efdc27206afa08e7588acc0b06006000000001976a914fc80396945a751a5dbc4b8ee682993675e55533588ac000000000100000001c2ad61d37043de51542592378f2d0122d118ec78ebc4e9bb59e59a03d38432aa000000008b48304502201837ae7e28ec87d59b44e3e86848762d827363d0164b02c62f108f9abc5fc1d3022100fee05b2212e743bf8050fdd3e0cd19c8acba7fef1172678a909048a81fa18fbd014104ae588cbc9515b921f6f06e8fdcee9bb4276cfa3f7eee37afffcf3ac348e59323d959d720ffb0c4eb13cf8d8feebff39857af582181801f21bf13090c2d1fdb38ffffffff0200e1f505000000001976a914cf1071894099f6ed178a9d3f8f736db0d9b8660b88ac4062b007000000001976a9144e60b49dcc9534d4700ab2bbea5880c221cab64488ac000000000100000003743c127e0cf6a849891792a6caec54cf4ef73681f423785c97d36aea27757fed000000008b48304502200f73796a8ef4f6b152485d2b5a81e6b077f50cc3535dbcd2e6bb4a72db6f1fb6022100ef9414edf553130a761380d85361301a3dd8747a6f26c454c3cd34b3e8a40b19014104da0b3696c878d3ef54b9b5ee21e2d6e1af534c5a8f6ab1cb7af342abd717aede2556b78813c02ccb98feb3bd4a88ff99e9e4c14f371caf9b4e175af19a70588dffffffff038ff9b434fd29a959006553c0af7e0bd60ab498c15b9cc5d5900859303bed48000000008b48304502210087beb550e5c32f1550c4d152bebb78fe95569f1bf0c6896bafef0d0e4cd1a6c902207a0449332ee5f53ab5904b6e8849de39931350db8edb91ad0064f0d6d3f15b210141047aa5d5ba00d20563285e33599fb71af0657dd107c84bcdea3335ddac7b5b47f537a3a7c80ac22b295628cee7fb07938d85a440c17066a364480cc22679641671ffffffffd4a590514aeace8e06d1bb2fb4ffc67a697d69d044d37f8f50c2c5dbc946b2ad010000008b483045022050d56ecf07775c47cc6937a8b87e45b6e37e22dabc421c91e62a776d727bb084022100fc93854986173493926f1ab10958eec7c3ef6b040de91948848399fe66cb9a6d01410439c6bf25ca3de24d30353dc4a202670c4de1327fb5d3b56020bd76d51b17e4dac84001894904f2b426362b52f808901d8b2066d0eef6f753c834105eeab9bf1affffffff0240420f00000000001976a914328ea7ed3377be3c7fab0d09487309057a33f8c588ac8047a119000000001976a914c1773b304bb2f975623f01fa365fb55e86b340c488ac000000000100000001c20a545d9df9f6b0f58eae2eec1cfe76ddb49d705a11dcb44a24cb464197e7e3010000008c493046022100b422fdc92aa6a86af349b826c033ecc2139ddf79ad7d215a0c00701cde4ce1d3022100a1017fc5c88b70900b56bbfb67eb0f45e47a4b4d28f63674fc7dff7f6fb1328f0141043f6b33e5101c289c5c760cb35f77c43ab8f4f2ebce622b68f7105e166ee7ceb2d3a8562a094038452d702c0ddde1fd089bceb84c0eb8c4584d116c040c49f6b3ffffffff02808d5b00000000001976a91420782923b21b1dd5b6b64d5069f7b01168288e0b88ac00e1f505000000001976a914ae214baa6cd56a0d50c9b60aea2352a56236207688ac0000000001000000016a0581837861fbce6253b8e950eb606e0ba879bf9e6a5cd9cadb919fd376be38000000008a47304402206c7308a8fa8d45c082da032880270c10d436d2a4623ba6e13819d45eecf0f3b90220356f4e9855a101487b680d0b4e69b10c509015293236f2cfbaf9da6cb6791466014104cfd5868f564bae61bf22479e8d22e030fbdbf9a01a9a0b61ddfb580a9552b47b15f8a28e7c40b8fe73d6b9c0e0cdd1527266602b327dcc272bd8c1a33b87e4deffffffff0248647800000000001976a914ceb552bdf23d002aed04c317c92cf8987e550df988ac40420f00000000001976a914586ce63c59b47a3ad08ccac6f132dc04ccbea0e288ac00000000"  id="block"><br>
+	Version [4 bytes - LE] en decimal : <span type="text" id="version"></span><br>
+	Previous Block Hash [32 bytes - BE] : <span type="text" id="PbH"></span><br>
+	Merkle Root [32 bytes - BE] : <span type="text" id="Mr"></span><br>
+	<em>Time</em> [4 bytes - LE] en décimal : <span type="text" id="Time"></span><br>
+	Bits [4 bytes - LE] sans conversion  : <span type="text" id="Bits"></span><br>
+	Nonce [4 bytes - LE] en décimal : <span type="text" id="Nonce"></span><br>
+	<button id="rameneHeader">désérialiser le header</button>
+</section>
+
+<script>
+	//Field						Size		Data
+	//Version					4 bytes	Little-endian
+	//Previous Block Hash	32 bytes	Big-endian
+	//Merkle Root				32 bytes	Big-endian
+	//Time						4 bytes	Little-endian
+	//Bits						4 bytes	Little-endian
+	//Nonce						4 bytes	Little-endian
+
+	const lVersion = 4 * 2 
+	const lPbH = 32 * 2
+	const lMr = 32 * 2
+	const lTime = 4 * 2
+	const lBits = 4 * 2
+	const lNonce = 4 * 2
+	
+	const lHeader = 160 
+
+	function extractionHeader(block) {
+			
+		var Header = {
+    	Version: '',
+    	PbH: '',
+    	Sequence: '',
+    	MerkleRoot: '',
+    	Time: '',
+    	Bits: '',
+    	Nonce: ''
+		};				
+
+		var pos = 0
+
+		Header.Version = block.substr(0,lVersion)
+		Header.PbH = block.substr(lVersion,lPbH).toUpperCase()				
+		pos = lVersion + lPbH
+		Header.MerkleRoot = block.substr(pos, lMr).toUpperCase()
+		pos = pos + lMr
+		Header.Time = block.substr(pos, lTime)
+		pos = pos + lTime
+		Header.Bits = block.substr(pos, lBits)
+		pos = pos + lBits
+		Header.Nonce = block.substr(pos, lNonce)		
+		return Header
+		
+	}
+
+
+	document.getElementById('rameneHeader').addEventListener('click', event => {
+	block = document.getElementById('block').value	
+	
+	BHeader =  extractionHeader(block)
+	
+	version = 'Ox' + BHeader.Version
+	versionhexa = convertHexaLittleEndianToHexa(version)
+	versiondecimale = parseInt(versionhexa, 16)
+	document.getElementById('version').innerHTML = versiondecimale
+	document.getElementById('PbH').innerHTML = BHeader.PbH		
+	document.getElementById('Mr').innerHTML = BHeader.MerkleRoot
+	time = 'Ox' + BHeader.Time
+	timehexa = convertHexaLittleEndianToHexa(time)
+	timedecimal = parseInt(timehexa, 16)
+	
+	var curdate = new Date(null);
+	curdate.setTime(timedecimal *1000);
+	TimeBlock = curdate.toString();
+
+	document.getElementById('Time').innerHTML = TimeBlock 
+	
+	document.getElementById('Bits').innerHTML = BHeader.Bits	
+	nonce = 'Ox' + BHeader.Nonce
+	noncehexa = convertHexaLittleEndianToHexa(nonce)
+	noncedecimal = parseInt(noncehexa, 16)
+	document.getElementById('Nonce').innerHTML = noncedecimal
+		
+})
+
+</script>
+
+
+<section>	
+	<h3>Etant donné un Bloc désérialiser la transaction coinbase </h3>
+	Bloc :<input type="textarea" value="010000009500c43a25c624520b5100adf82cb9f9da72fd2447a496bc600b0000000000006cd862370395dedf1da2841ccda0fc489e3039de5f1ccddef0e834991a65600ea6c8cb4db3936a1ae31439910d01000000010000000000000000000000000000000000000000000000000000000000000000ffffffff0704b3936a1a017cffffffff01403d522a01000000434104563053b8900762f3d3e8725012d617d177e3c4af3275c3265a1908b434e0df91ec75603d0d8955ef040e5f68d5c36989efe21a59f4ef94a5cc95c99794a84492ac000000000100000001544bb26a50502ef11c745f1127b29a47856b3ecd9a1b6c540a66493d5fbf0046010000008b483045022100c9e35aa55af5ac98cb67c4db7cf3d3f128753c4698f5d25ca0cdc3decd0c46be02204d6dfe89bd3fe88a32d47a44c0ab3ab60d87b27b90106f1b2f9f67c9c60cc80c01410449b8d933f97a8c4fe6ce962ee2abff8a81d8cfc5e0870a50cea76c50d04addf2df09331c4a47cdc3bc27a628e766ef5d01f28ee147ed21723b5ff3a62ed8da3effffffff024094ef03010000001976a9146c8de651f8b92f87ff43fb9732babec784bdb6f588acc05d1626000000001976a9144f006767feebf6438aaf51ef86ae4286a1c571b988ac000000000100000001c03533907c967249c5dc80d266e6e65555581e6328f6a3859164bfbb1eb0bc17000000008b483045022100a616082b724043758a4732dae5461783cb48ccf1b36a7f98d41f3f5f8db577f80220084df7afc2c912c3ef23ea43cfec651ba97ee6c4e4220c0f58b78f374626bdfb01410412aebcb2c5d5625c138c9cdd318ae04a103002b0d1b1541d72cd51dc016bfec885e7b93d73375903acb2731cdb7790b1d969db2684646e6fbeabb0559b6513c1ffffffff024094ef03010000001976a914fa91e22c8a2a4d1fa592de1cf7aa8f958867a1d288acc05d1626000000001976a91452fc9e7e1b8be3a61fe20381cb343e62eac105cb88ac0000000001000000015f71a19a74e9f5d202b9dd552471f2e8a24fd883a76f23455f1e4b738fd2c20f000000008b483045022100b6f858814dbf6a6d2dc71701028361a9e9ef2e2c52e5898f1bfccfad145ccda7022046973784a8de9007a52576070621c29e92f91a332960a5fb7ded81973d2e7be4014104dd2755d0a38af359659614530bd25e35fcb3d215b1fc41038beb495ea5db774e71a2f307652774b79c5dfa8fdccff372e61a27a177c6b157cc22beec361cc387ffffffff0200688909000000001976a91473b81e77969678ba046c79b44829f769ff2e00f188ac40660301000000001976a914597588d391674d08c2cfc35015db9487922aba5288ac000000000100000001d1371f11cc10390fa0361f3e6b2e25e48c2f69040bf7d400d1b2ecf97b8461f0000000008b483045022061c083b63887398f85a527c8e256ee3498bc50fa6bc85d90ebf63c49ad406836022100884ffd73107b1129f378bfa29858d1e1c89f89922260a99a32a813572e3884460141044b32f0631083e1cc5f0401807abc7a12a715083297b86923675a8bf66bc6af0e82a184bed186896ce1059c9bb36e26b265536f4c9f181f570a53891ec9ba4a18ffffffff02804f470c000000001976a914afd883b5bd6ae5e88b39cc692db33a6ff7182dcb88ac00ca9a3b000000001976a9145539c2a8cee228ef366cb0e8f29e0079ce03874888ac000000000100000001b36bce13ff6be1d5bd81267f9a24b2636fae20e0a1a5ca6c469d1c0fbc56a1ef000000008a4730440220592616f1af3377a3cc7bc721745cf2657131759b35c40ae03820931062c061c802203fc4adb8d0da6bd4269f8331b21793304743015a735bcbb95298ad82595f40da014104dd182dfcc9eb893ea6a0f34cec5906fbb61008b6fd669b74414d2999bf49fd21f7eb775f6175234d79cf8b9d3ac749b2bb3673462cd94641bcf9e27fe2cfc08bffffffff02c09cca64000000001976a91494006d131d49dd5c766721d7fd1db65df86c539d88ac4030a779000000001976a91421136ba0c035bb72e736975f0f9410117cf050b588ac000000000100000003d572d1e1ff09a1df9c081417f9a225c16d8e94fca3cc0d3112761e5df11f33e2000000008c49304602210097f54a78861aa913ca1b76925107a26762d7405cfeaa19983a99fb61d99e5540022100ab1cd36486fb5598d67e15e9947f17d5dab53fdd013b0e9ca8b8ffb2f7f40e9e014104b5f0dfe1370e364f516d25e1524ea5eb8cb8afe7e0f739576283ffbcd7b8307f0f79459d34ce8f6386bc725b730c26f4e5996029824e48baed2ad75d8b916fd3ffffffff7c945863dc4cdb9c2e160e3653c8ab77a33b55f061df53507c0a406a07e33e5e010000008c493046022100e7eda51ba3eff04c1e5fdd93bf4397e0e652ce38c725b687554e1dccf562fdd80221009afa588cf5347cd7f50e4c097ffabe789a3c55235d8a2fd639b21d2a73b50fb8014104a105201abcc58f7773fc5d7125344038b5ca77571173ac4b5741f9b11f8b360f4e88ac887f680af7fde035295939145d868011e0b37e077cc5e5aa2b699f6030ffffffff1b1887532137b5c7ec5c141f5cb88dbf1465c578fb6491acc4d9ffade969bdbb010000008b4830450220630795aefe55d8be9111ee802841eae06a6b4aa6fa2356eb2d00142d93263465022100e9e1dc61dbaf1a3e4e57b84c8c515cdf7687ddf0e0d7b04036105da6cfcb2845014104a105201abcc58f7773fc5d7125344038b5ca77571173ac4b5741f9b11f8b360f4e88ac887f680af7fde035295939145d868011e0b37e077cc5e5aa2b699f6030ffffffff0180b2e60e000000001976a914c865d81683bd195f92e47c583b35ed0b6a37f6a388ac000000000100000002eec8c3317b0fb6c41a6d8332523f8ef4b74c98a963a1928ca9d280aa323d9dee000000008b483045022100fd606f480b20406c8da75f4640c940e441ff57442b982ca0b45ed4a55b622522022079de38e1baf58bc0dbe12938412bdd3cd7e0be71fa5b67eeca2b5b343aede45c01410466f4f8457e681710421c89e6577db1973485f11708ff062155bb34a3ef0e4423f052c5d4eb548e79647cff8f2d272b3a8cfe9f34025bc90c60652bd41ebb2d57ffffffffeec8c3317b0fb6c41a6d8332523f8ef4b74c98a963a1928ca9d280aa323d9dee010000008c4930460221008a34de93e3081bfb6e41f79f591851895cf9cb354775966b00769f7ba9e5fc02022100a8778d15080a07721fadb4ec63229677fdc09ce919c10edf5b50de46c8199ee301410412581a35fdf35e291fc14119096a4e0c8e4f4ecf5c6ede7f727aae7d859aa1ac1ae3d5f777740998352dd76e46f777026f8b9e6a10a98bcd70c6b0ca25e3a7fbffffffff02c0e1e400000000001976a914dba62e0fbc75a167491d075cbe916d4d95fb412e88ac00b4c404000000001976a9140a1d803e44f099d3c91d4b988d3c8a9fca5d4b5d88ac0000000001000000014395f5cf12900e99dd6192b6209b49b3450e566019ed408d99104dd200d41c59000000008b483045022100a4409279bcbae239067d4533ab66f60b814a7c736e0e493138573f58733bbf1002204bed71dcb9c0e761d6c301c8358ed65081c60644a48efef6c37baf9729e6fc2701410432a325c210a4f9bb5d1522b81011a51bac208bba644eee54b2c9fbcbd748a53ca04f57acd052b247a1ace735c414958a3e1fded493f4128207e00ea058ceff87ffffffff024016750c000000001976a914cdc0d731b176c3aa8ba0ae0efdc27206afa08e7588acc0b06006000000001976a914fc80396945a751a5dbc4b8ee682993675e55533588ac000000000100000001c2ad61d37043de51542592378f2d0122d118ec78ebc4e9bb59e59a03d38432aa000000008b48304502201837ae7e28ec87d59b44e3e86848762d827363d0164b02c62f108f9abc5fc1d3022100fee05b2212e743bf8050fdd3e0cd19c8acba7fef1172678a909048a81fa18fbd014104ae588cbc9515b921f6f06e8fdcee9bb4276cfa3f7eee37afffcf3ac348e59323d959d720ffb0c4eb13cf8d8feebff39857af582181801f21bf13090c2d1fdb38ffffffff0200e1f505000000001976a914cf1071894099f6ed178a9d3f8f736db0d9b8660b88ac4062b007000000001976a9144e60b49dcc9534d4700ab2bbea5880c221cab64488ac000000000100000003743c127e0cf6a849891792a6caec54cf4ef73681f423785c97d36aea27757fed000000008b48304502200f73796a8ef4f6b152485d2b5a81e6b077f50cc3535dbcd2e6bb4a72db6f1fb6022100ef9414edf553130a761380d85361301a3dd8747a6f26c454c3cd34b3e8a40b19014104da0b3696c878d3ef54b9b5ee21e2d6e1af534c5a8f6ab1cb7af342abd717aede2556b78813c02ccb98feb3bd4a88ff99e9e4c14f371caf9b4e175af19a70588dffffffff038ff9b434fd29a959006553c0af7e0bd60ab498c15b9cc5d5900859303bed48000000008b48304502210087beb550e5c32f1550c4d152bebb78fe95569f1bf0c6896bafef0d0e4cd1a6c902207a0449332ee5f53ab5904b6e8849de39931350db8edb91ad0064f0d6d3f15b210141047aa5d5ba00d20563285e33599fb71af0657dd107c84bcdea3335ddac7b5b47f537a3a7c80ac22b295628cee7fb07938d85a440c17066a364480cc22679641671ffffffffd4a590514aeace8e06d1bb2fb4ffc67a697d69d044d37f8f50c2c5dbc946b2ad010000008b483045022050d56ecf07775c47cc6937a8b87e45b6e37e22dabc421c91e62a776d727bb084022100fc93854986173493926f1ab10958eec7c3ef6b040de91948848399fe66cb9a6d01410439c6bf25ca3de24d30353dc4a202670c4de1327fb5d3b56020bd76d51b17e4dac84001894904f2b426362b52f808901d8b2066d0eef6f753c834105eeab9bf1affffffff0240420f00000000001976a914328ea7ed3377be3c7fab0d09487309057a33f8c588ac8047a119000000001976a914c1773b304bb2f975623f01fa365fb55e86b340c488ac000000000100000001c20a545d9df9f6b0f58eae2eec1cfe76ddb49d705a11dcb44a24cb464197e7e3010000008c493046022100b422fdc92aa6a86af349b826c033ecc2139ddf79ad7d215a0c00701cde4ce1d3022100a1017fc5c88b70900b56bbfb67eb0f45e47a4b4d28f63674fc7dff7f6fb1328f0141043f6b33e5101c289c5c760cb35f77c43ab8f4f2ebce622b68f7105e166ee7ceb2d3a8562a094038452d702c0ddde1fd089bceb84c0eb8c4584d116c040c49f6b3ffffffff02808d5b00000000001976a91420782923b21b1dd5b6b64d5069f7b01168288e0b88ac00e1f505000000001976a914ae214baa6cd56a0d50c9b60aea2352a56236207688ac0000000001000000016a0581837861fbce6253b8e950eb606e0ba879bf9e6a5cd9cadb919fd376be38000000008a47304402206c7308a8fa8d45c082da032880270c10d436d2a4623ba6e13819d45eecf0f3b90220356f4e9855a101487b680d0b4e69b10c509015293236f2cfbaf9da6cb6791466014104cfd5868f564bae61bf22479e8d22e030fbdbf9a01a9a0b61ddfb580a9552b47b15f8a28e7c40b8fe73d6b9c0e0cdd1527266602b327dcc272bd8c1a33b87e4deffffffff0248647800000000001976a914ceb552bdf23d002aed04c317c92cf8987e550df988ac40420f00000000001976a914586ce63c59b47a3ad08ccac6f132dc04ccbea0e288ac00000000"  id="blocksuite"><br>
+	Début [donne le nombre de transactions au total y compris coinbase] : <span type="text" id="debut"></span><br>
+	Version [4 bytes - LE] converti en décimal  : <span type="text" id="version2"></span><br>
+	Input Count [Hypothèse -> 1 Byte] en decimal : <span type="text" id="icount"></span><br>
+	Inputs au complet [Normalement sur 32 bytes + 4 bytes + (ScriptSig Size [sur 1 byte]) + valeur du ScriptSig + 4 bytes de séquence] : <span type="text" id="inputs"></span><br>
+	Output Count [Hypothèse -> 1 Byte] en decimal : <span type="text" id="ocount"></span><br>
+	Ouputs au complet [valeur de l'output unique sur 8 bytes + (ScriptPubKey Size [sur 1 byte]) + valeur du ScriptPubKey] : <span type="text" id="outputs"></span><br>
+	<em><strong>Reward Value </strong></em>[récompense pour le bloc -> 8 Bytes LE] en bitcoins avec les fees : <span type="text" id="reward"></span><br>
+	Locktime [4 bytes - LE] : <span type="text" id="locktime" ></span><br>
+	<em>Longueur totale de bits de la transaction coinbase [on ne compte pas le Début]</em> : <span type="text" id="longueur" ></span><br>
+	<button id="rameneSuite">Deserialiser la première transaction coinbase</button>																																																																	
+</section>
+		
+<script>
+
+	const lDebut = 1 * 2	
+	const lIcount = 1 * 2
+	const lOcount = 1 * 2
+	const lTXID = 32 * 2
+	const lVOUT = 4 * 2
+	const lScriptSigSize = 1 * 2 //attention peut-être variable
+	const lSequence = 4 * 2	
+	const lOValue = 8 * 2
+	const lPubKeySize = 1 * 2 //attention peut-être variable
+	const lLockTime = 4 * 2
+	
+
+	function extractionSuite(blocksuite) {			
+		var Suite = {
+		Debut:'',
+    	Version2: '',
+    	Icount: '',    	
+    	Inputs: '',
+    	Ocount: '',
+    	OutputValue : '',
+    	Outputs: '',
+    	Locktime: ''
+		};				
+		
+		var posi = lHeader
+		Suite.Debut = blocksuite.substr(posi,lDebut)
+		posi = posi + lDebut
+		
+		Suite.Version2 = blocksuite.substr(posi,lVersion) 
+		posi = posi + lVersion
+
+		Suite.Icount = blocksuite.substr(posi, lIcount)
+		posi = posi + lIcount	
+
+																																																																																																																																																																																																																																																																																																																							/* Normalement on recupère ce qu'il y a dans le Icount et on le passe à une autre fonction qui prend en paramètre la dernière position et le NbrInput*/
+		NbrInput = parseInt(blocksuite.substr(posi, lIcount),16)
+		
+		Suite.Inputs = blocksuite.substr(posi, lTXID).toUpperCase()
+		posi = posi + lTXID
+//		console.log('Inputs TXID : ' + Suite.Inputs)
+		Suite.Inputs = Suite.Inputs + blocksuite.substr(posi, lVOUT).toUpperCase()
+//		console.log('Inputs TXID + VOUT : ' + Suite.Inputs)
+		posi = posi + lVOUT	
+		
+		/* on extrait la taille du ScriptSig */
+		TailleScriptSig = parseInt(blocksuite.substr(posi,lScriptSigSize),16) * 2
+//		console.log('taille du scriptsig : ' + TailleScriptSig )
+		
+		/* et on avance */
+		posi = posi + lScriptSigSize	
+		/* Pour prendre la Signature */		
+		Suite.Inputs = Suite.Inputs + blocksuite.substr(posi, TailleScriptSig).toUpperCase()
+		console.log('Inputs TXID + VOUT + ScriptSig : ' + Suite.Inputs)
+		/* et on termine sur la séquence */		
+		posi = posi + TailleScriptSig
+		Suite.Inputs = Suite.Inputs + blocksuite.substr(posi, lSequence).toUpperCase()
+//		console.log('Inputs TXID + VOUT + ScriptSig + Sequence : ' + Suite.Inputs)
+
+		posi = posi + lSequence
+
+		Suite.Ocount = blocksuite.substr(posi, lOcount)
+		NbrOutput = parseInt(blocksuite.substr(posi, lOcount),16)
+		
+//		console.log('Nombre outputs : ' + Suite.Ocount)
+		posi = posi + lOcount
+
+		Suite.Outputs = blocksuite.substr(posi, lOValue).toUpperCase()
+		Suite.OutputValue = blocksuite.substr(posi, lOValue).toUpperCase()
+//		console.log('dans OutputValue ... : ' + Suite.OutputValue)
+//		console.log('Output Value : ' + Suite.Outputs)
+
+		
+		posi = posi + lOValue
+		
+		/* on extrait la taille du Script PubKey */
+		TailleScriptPubKey = parseInt(blocksuite.substr(posi,lPubKeySize),16) * 2	
+		
+//		console.log('taille du scriptPubkey en hexa : ' + blocksuite.substr(posi,lPubKeySize))					
+//		console.log('taille du scriptPubkey en decimal : ' + TailleScriptPubKey )
+		
+		/* et on avance */
+		posi = posi + lPubKeySize
+
+		/* Pour prendre le ScriptPubKey */		
+		Suite.Outputs = Suite.Outputs + blocksuite.substr(posi, TailleScriptPubKey).toUpperCase()
+		console.log('Output Value + ScriptPubKey  : ' + Suite.Outputs)
+
+		posi = posi + TailleScriptPubKey
+		/* et on termine avec le locktime */
+		Suite.Locktime = blocksuite.substr(posi, lLockTime).toUpperCase()		
+		Suite.Outputs = Suite.Outputs + blocksuite.substr(posi, lLockTime).toUpperCase()
+//		console.log('Output Value + ScriptPubKey + Locktime : ' + Suite.Outputs)
+		return Suite		
+	}
+
+	document.getElementById('rameneSuite').addEventListener('click', event => {
+	blocksuite = document.getElementById('blocksuite').value
+	
+	BlockCBase = extractionSuite(blocksuite)
+	debdecimale = parseInt(BlockCBase.Debut, 16)
+	document.getElementById('debut').innerHTML = debdecimale
+
+	version2 = 'Ox' + BlockCBase.Version2
+	versionhexa = convertHexaLittleEndianToHexa(version2)
+	versiondecimale = parseInt(versionhexa, 16)
+	document.getElementById('version2').innerHTML = versiondecimale
+
+	icountdecimal = parseInt(BlockCBase.Icount, 16)
+	document.getElementById('icount').innerHTML = icountdecimal 	
+	
+	document.getElementById('inputs').innerHTML = BlockCBase.Inputs	
+		
+	ocountdecimal = parseInt(BlockCBase.Ocount, 16)
+	document.getElementById('ocount').innerHTML = ocountdecimal 
+		
+	reward = 'Ox' + BlockCBase.OutputValue
+	rewardhexa = convertHexaLittleEndianToHexa(reward)
+	rewardecimal = parseInt(rewardhexa, 16) / 10 **8
+	document.getElementById('reward').innerHTML = rewardecimal 			
+	document.getElementById('locktime').innerHTML = BlockCBase.Locktime 
+	document.getElementById('outputs').innerHTML = BlockCBase.Outputs	
+	
+	document.getElementById('longueur').innerHTML = BlockCBase.Version2.length + BlockCBase.Icount.length 
+	+ BlockCBase.Inputs.length + BlockCBase.Ocount.length + BlockCBase.Outputs.length + 4 		// on ne compte pas le début 	
+})
+
+</script>		
+
+
+<section>	
+	<h3>Etant donné un Bloc renvoyer la chaîne de toutes les transactions(hors coinbase)</h3>
+	Bloc :<input type="textarea" value="010000009500c43a25c624520b5100adf82cb9f9da72fd2447a496bc600b0000000000006cd862370395dedf1da2841ccda0fc489e3039de5f1ccddef0e834991a65600ea6c8cb4db3936a1ae31439910d01000000010000000000000000000000000000000000000000000000000000000000000000ffffffff0704b3936a1a017cffffffff01403d522a01000000434104563053b8900762f3d3e8725012d617d177e3c4af3275c3265a1908b434e0df91ec75603d0d8955ef040e5f68d5c36989efe21a59f4ef94a5cc95c99794a84492ac000000000100000001544bb26a50502ef11c745f1127b29a47856b3ecd9a1b6c540a66493d5fbf0046010000008b483045022100c9e35aa55af5ac98cb67c4db7cf3d3f128753c4698f5d25ca0cdc3decd0c46be02204d6dfe89bd3fe88a32d47a44c0ab3ab60d87b27b90106f1b2f9f67c9c60cc80c01410449b8d933f97a8c4fe6ce962ee2abff8a81d8cfc5e0870a50cea76c50d04addf2df09331c4a47cdc3bc27a628e766ef5d01f28ee147ed21723b5ff3a62ed8da3effffffff024094ef03010000001976a9146c8de651f8b92f87ff43fb9732babec784bdb6f588acc05d1626000000001976a9144f006767feebf6438aaf51ef86ae4286a1c571b988ac000000000100000001c03533907c967249c5dc80d266e6e65555581e6328f6a3859164bfbb1eb0bc17000000008b483045022100a616082b724043758a4732dae5461783cb48ccf1b36a7f98d41f3f5f8db577f80220084df7afc2c912c3ef23ea43cfec651ba97ee6c4e4220c0f58b78f374626bdfb01410412aebcb2c5d5625c138c9cdd318ae04a103002b0d1b1541d72cd51dc016bfec885e7b93d73375903acb2731cdb7790b1d969db2684646e6fbeabb0559b6513c1ffffffff024094ef03010000001976a914fa91e22c8a2a4d1fa592de1cf7aa8f958867a1d288acc05d1626000000001976a91452fc9e7e1b8be3a61fe20381cb343e62eac105cb88ac0000000001000000015f71a19a74e9f5d202b9dd552471f2e8a24fd883a76f23455f1e4b738fd2c20f000000008b483045022100b6f858814dbf6a6d2dc71701028361a9e9ef2e2c52e5898f1bfccfad145ccda7022046973784a8de9007a52576070621c29e92f91a332960a5fb7ded81973d2e7be4014104dd2755d0a38af359659614530bd25e35fcb3d215b1fc41038beb495ea5db774e71a2f307652774b79c5dfa8fdccff372e61a27a177c6b157cc22beec361cc387ffffffff0200688909000000001976a91473b81e77969678ba046c79b44829f769ff2e00f188ac40660301000000001976a914597588d391674d08c2cfc35015db9487922aba5288ac000000000100000001d1371f11cc10390fa0361f3e6b2e25e48c2f69040bf7d400d1b2ecf97b8461f0000000008b483045022061c083b63887398f85a527c8e256ee3498bc50fa6bc85d90ebf63c49ad406836022100884ffd73107b1129f378bfa29858d1e1c89f89922260a99a32a813572e3884460141044b32f0631083e1cc5f0401807abc7a12a715083297b86923675a8bf66bc6af0e82a184bed186896ce1059c9bb36e26b265536f4c9f181f570a53891ec9ba4a18ffffffff02804f470c000000001976a914afd883b5bd6ae5e88b39cc692db33a6ff7182dcb88ac00ca9a3b000000001976a9145539c2a8cee228ef366cb0e8f29e0079ce03874888ac000000000100000001b36bce13ff6be1d5bd81267f9a24b2636fae20e0a1a5ca6c469d1c0fbc56a1ef000000008a4730440220592616f1af3377a3cc7bc721745cf2657131759b35c40ae03820931062c061c802203fc4adb8d0da6bd4269f8331b21793304743015a735bcbb95298ad82595f40da014104dd182dfcc9eb893ea6a0f34cec5906fbb61008b6fd669b74414d2999bf49fd21f7eb775f6175234d79cf8b9d3ac749b2bb3673462cd94641bcf9e27fe2cfc08bffffffff02c09cca64000000001976a91494006d131d49dd5c766721d7fd1db65df86c539d88ac4030a779000000001976a91421136ba0c035bb72e736975f0f9410117cf050b588ac000000000100000003d572d1e1ff09a1df9c081417f9a225c16d8e94fca3cc0d3112761e5df11f33e2000000008c49304602210097f54a78861aa913ca1b76925107a26762d7405cfeaa19983a99fb61d99e5540022100ab1cd36486fb5598d67e15e9947f17d5dab53fdd013b0e9ca8b8ffb2f7f40e9e014104b5f0dfe1370e364f516d25e1524ea5eb8cb8afe7e0f739576283ffbcd7b8307f0f79459d34ce8f6386bc725b730c26f4e5996029824e48baed2ad75d8b916fd3ffffffff7c945863dc4cdb9c2e160e3653c8ab77a33b55f061df53507c0a406a07e33e5e010000008c493046022100e7eda51ba3eff04c1e5fdd93bf4397e0e652ce38c725b687554e1dccf562fdd80221009afa588cf5347cd7f50e4c097ffabe789a3c55235d8a2fd639b21d2a73b50fb8014104a105201abcc58f7773fc5d7125344038b5ca77571173ac4b5741f9b11f8b360f4e88ac887f680af7fde035295939145d868011e0b37e077cc5e5aa2b699f6030ffffffff1b1887532137b5c7ec5c141f5cb88dbf1465c578fb6491acc4d9ffade969bdbb010000008b4830450220630795aefe55d8be9111ee802841eae06a6b4aa6fa2356eb2d00142d93263465022100e9e1dc61dbaf1a3e4e57b84c8c515cdf7687ddf0e0d7b04036105da6cfcb2845014104a105201abcc58f7773fc5d7125344038b5ca77571173ac4b5741f9b11f8b360f4e88ac887f680af7fde035295939145d868011e0b37e077cc5e5aa2b699f6030ffffffff0180b2e60e000000001976a914c865d81683bd195f92e47c583b35ed0b6a37f6a388ac000000000100000002eec8c3317b0fb6c41a6d8332523f8ef4b74c98a963a1928ca9d280aa323d9dee000000008b483045022100fd606f480b20406c8da75f4640c940e441ff57442b982ca0b45ed4a55b622522022079de38e1baf58bc0dbe12938412bdd3cd7e0be71fa5b67eeca2b5b343aede45c01410466f4f8457e681710421c89e6577db1973485f11708ff062155bb34a3ef0e4423f052c5d4eb548e79647cff8f2d272b3a8cfe9f34025bc90c60652bd41ebb2d57ffffffffeec8c3317b0fb6c41a6d8332523f8ef4b74c98a963a1928ca9d280aa323d9dee010000008c4930460221008a34de93e3081bfb6e41f79f591851895cf9cb354775966b00769f7ba9e5fc02022100a8778d15080a07721fadb4ec63229677fdc09ce919c10edf5b50de46c8199ee301410412581a35fdf35e291fc14119096a4e0c8e4f4ecf5c6ede7f727aae7d859aa1ac1ae3d5f777740998352dd76e46f777026f8b9e6a10a98bcd70c6b0ca25e3a7fbffffffff02c0e1e400000000001976a914dba62e0fbc75a167491d075cbe916d4d95fb412e88ac00b4c404000000001976a9140a1d803e44f099d3c91d4b988d3c8a9fca5d4b5d88ac0000000001000000014395f5cf12900e99dd6192b6209b49b3450e566019ed408d99104dd200d41c59000000008b483045022100a4409279bcbae239067d4533ab66f60b814a7c736e0e493138573f58733bbf1002204bed71dcb9c0e761d6c301c8358ed65081c60644a48efef6c37baf9729e6fc2701410432a325c210a4f9bb5d1522b81011a51bac208bba644eee54b2c9fbcbd748a53ca04f57acd052b247a1ace735c414958a3e1fded493f4128207e00ea058ceff87ffffffff024016750c000000001976a914cdc0d731b176c3aa8ba0ae0efdc27206afa08e7588acc0b06006000000001976a914fc80396945a751a5dbc4b8ee682993675e55533588ac000000000100000001c2ad61d37043de51542592378f2d0122d118ec78ebc4e9bb59e59a03d38432aa000000008b48304502201837ae7e28ec87d59b44e3e86848762d827363d0164b02c62f108f9abc5fc1d3022100fee05b2212e743bf8050fdd3e0cd19c8acba7fef1172678a909048a81fa18fbd014104ae588cbc9515b921f6f06e8fdcee9bb4276cfa3f7eee37afffcf3ac348e59323d959d720ffb0c4eb13cf8d8feebff39857af582181801f21bf13090c2d1fdb38ffffffff0200e1f505000000001976a914cf1071894099f6ed178a9d3f8f736db0d9b8660b88ac4062b007000000001976a9144e60b49dcc9534d4700ab2bbea5880c221cab64488ac000000000100000003743c127e0cf6a849891792a6caec54cf4ef73681f423785c97d36aea27757fed000000008b48304502200f73796a8ef4f6b152485d2b5a81e6b077f50cc3535dbcd2e6bb4a72db6f1fb6022100ef9414edf553130a761380d85361301a3dd8747a6f26c454c3cd34b3e8a40b19014104da0b3696c878d3ef54b9b5ee21e2d6e1af534c5a8f6ab1cb7af342abd717aede2556b78813c02ccb98feb3bd4a88ff99e9e4c14f371caf9b4e175af19a70588dffffffff038ff9b434fd29a959006553c0af7e0bd60ab498c15b9cc5d5900859303bed48000000008b48304502210087beb550e5c32f1550c4d152bebb78fe95569f1bf0c6896bafef0d0e4cd1a6c902207a0449332ee5f53ab5904b6e8849de39931350db8edb91ad0064f0d6d3f15b210141047aa5d5ba00d20563285e33599fb71af0657dd107c84bcdea3335ddac7b5b47f537a3a7c80ac22b295628cee7fb07938d85a440c17066a364480cc22679641671ffffffffd4a590514aeace8e06d1bb2fb4ffc67a697d69d044d37f8f50c2c5dbc946b2ad010000008b483045022050d56ecf07775c47cc6937a8b87e45b6e37e22dabc421c91e62a776d727bb084022100fc93854986173493926f1ab10958eec7c3ef6b040de91948848399fe66cb9a6d01410439c6bf25ca3de24d30353dc4a202670c4de1327fb5d3b56020bd76d51b17e4dac84001894904f2b426362b52f808901d8b2066d0eef6f753c834105eeab9bf1affffffff0240420f00000000001976a914328ea7ed3377be3c7fab0d09487309057a33f8c588ac8047a119000000001976a914c1773b304bb2f975623f01fa365fb55e86b340c488ac000000000100000001c20a545d9df9f6b0f58eae2eec1cfe76ddb49d705a11dcb44a24cb464197e7e3010000008c493046022100b422fdc92aa6a86af349b826c033ecc2139ddf79ad7d215a0c00701cde4ce1d3022100a1017fc5c88b70900b56bbfb67eb0f45e47a4b4d28f63674fc7dff7f6fb1328f0141043f6b33e5101c289c5c760cb35f77c43ab8f4f2ebce622b68f7105e166ee7ceb2d3a8562a094038452d702c0ddde1fd089bceb84c0eb8c4584d116c040c49f6b3ffffffff02808d5b00000000001976a91420782923b21b1dd5b6b64d5069f7b01168288e0b88ac00e1f505000000001976a914ae214baa6cd56a0d50c9b60aea2352a56236207688ac0000000001000000016a0581837861fbce6253b8e950eb606e0ba879bf9e6a5cd9cadb919fd376be38000000008a47304402206c7308a8fa8d45c082da032880270c10d436d2a4623ba6e13819d45eecf0f3b90220356f4e9855a101487b680d0b4e69b10c509015293236f2cfbaf9da6cb6791466014104cfd5868f564bae61bf22479e8d22e030fbdbf9a01a9a0b61ddfb580a9552b47b15f8a28e7c40b8fe73d6b9c0e0cdd1527266602b327dcc272bd8c1a33b87e4deffffffff0248647800000000001976a914ceb552bdf23d002aed04c317c92cf8987e550df988ac40420f00000000001976a914586ce63c59b47a3ad08ccac6f132dc04ccbea0e288ac00000000" id="blockfortransaction"><br>
+	Affichage de la chaine de transactions à traiter : <span type="text" id="chainetransaction"></span><br>
+	<em><strong>Nbre de transactions (hors coinbase) :</strong></em> <span type="text" id="nbrtransaction"></span><br>
+	<button id="transactions">renvoyer les transactions </button>
+</section>
+
+
+<script>
+	function extractiontransaction(blockfortransaction) {
+	longueurTotale = blockfortransaction.length
+//	console.log("block :" + blockfortransaction)
+//	console.log("longueur Totale " + longueurTotale)	
+	longueurEntete = lHeader
+
+	coinbase = extractionSuite(blockfortransaction) 
+	NbrTX = parseInt(coinbase.Debut, 16) - 1
+//	console.log("Il y a au total : " + NbrTX + " transactions (sans coinbase) ")	
+	
+	longueurCoinbasebis = coinbase.Debut.length + coinbase.Version2.length + coinbase.Icount.length + coinbase.Inputs.length + coinbase.Ocount.length + coinbase.Outputs.length + 4
+	
+//	console.log("Longcoinbase raisonne " + longueurCoinbasebis)	
+	longueurtransactions = longueurTotale - (longueurEntete + longueurCoinbasebis)
+//	console.log("longueur transactions " + longueurtransactions)
+	posit = longueurEntete + longueurCoinbasebis
+	transactions = blockfortransaction.substr(posit, longueurtransactions)
+	return {NbrTX, transactions}	/* return transactions */
+	}
+	
+	document.getElementById('transactions').addEventListener('click', event => {
+	blockfortransaction = document.getElementById('blockfortransaction').value
+	document.getElementById('chainetransaction').innerHTML = extractiontransaction(blockfortransaction)
+	
+	BlockSimple = extractiontransaction(blockfortransaction)		
+	document.getElementById('chainetransaction').innerHTML = BlockSimple.transactions
+	document.getElementById('nbrtransaction').innerHTML = BlockSimple.NbrTX		
+	
+   /* document.getElementById('chainetransaction').innerHTML = extractiontransaction(blockfortransaction) */
+   
+})
+
+
+</script>
+
+
+
+<section>	
+	<h3>Etant donné un Bloc désérialiser la chaine de la première transaction (hors coinbase)</h3>
+	Bloc :<input type="textarea" value="010000009500c43a25c624520b5100adf82cb9f9da72fd2447a496bc600b0000000000006cd862370395dedf1da2841ccda0fc489e3039de5f1ccddef0e834991a65600ea6c8cb4db3936a1ae31439910d01000000010000000000000000000000000000000000000000000000000000000000000000ffffffff0704b3936a1a017cffffffff01403d522a01000000434104563053b8900762f3d3e8725012d617d177e3c4af3275c3265a1908b434e0df91ec75603d0d8955ef040e5f68d5c36989efe21a59f4ef94a5cc95c99794a84492ac000000000100000001544bb26a50502ef11c745f1127b29a47856b3ecd9a1b6c540a66493d5fbf0046010000008b483045022100c9e35aa55af5ac98cb67c4db7cf3d3f128753c4698f5d25ca0cdc3decd0c46be02204d6dfe89bd3fe88a32d47a44c0ab3ab60d87b27b90106f1b2f9f67c9c60cc80c01410449b8d933f97a8c4fe6ce962ee2abff8a81d8cfc5e0870a50cea76c50d04addf2df09331c4a47cdc3bc27a628e766ef5d01f28ee147ed21723b5ff3a62ed8da3effffffff024094ef03010000001976a9146c8de651f8b92f87ff43fb9732babec784bdb6f588acc05d1626000000001976a9144f006767feebf6438aaf51ef86ae4286a1c571b988ac000000000100000001c03533907c967249c5dc80d266e6e65555581e6328f6a3859164bfbb1eb0bc17000000008b483045022100a616082b724043758a4732dae5461783cb48ccf1b36a7f98d41f3f5f8db577f80220084df7afc2c912c3ef23ea43cfec651ba97ee6c4e4220c0f58b78f374626bdfb01410412aebcb2c5d5625c138c9cdd318ae04a103002b0d1b1541d72cd51dc016bfec885e7b93d73375903acb2731cdb7790b1d969db2684646e6fbeabb0559b6513c1ffffffff024094ef03010000001976a914fa91e22c8a2a4d1fa592de1cf7aa8f958867a1d288acc05d1626000000001976a91452fc9e7e1b8be3a61fe20381cb343e62eac105cb88ac0000000001000000015f71a19a74e9f5d202b9dd552471f2e8a24fd883a76f23455f1e4b738fd2c20f000000008b483045022100b6f858814dbf6a6d2dc71701028361a9e9ef2e2c52e5898f1bfccfad145ccda7022046973784a8de9007a52576070621c29e92f91a332960a5fb7ded81973d2e7be4014104dd2755d0a38af359659614530bd25e35fcb3d215b1fc41038beb495ea5db774e71a2f307652774b79c5dfa8fdccff372e61a27a177c6b157cc22beec361cc387ffffffff0200688909000000001976a91473b81e77969678ba046c79b44829f769ff2e00f188ac40660301000000001976a914597588d391674d08c2cfc35015db9487922aba5288ac000000000100000001d1371f11cc10390fa0361f3e6b2e25e48c2f69040bf7d400d1b2ecf97b8461f0000000008b483045022061c083b63887398f85a527c8e256ee3498bc50fa6bc85d90ebf63c49ad406836022100884ffd73107b1129f378bfa29858d1e1c89f89922260a99a32a813572e3884460141044b32f0631083e1cc5f0401807abc7a12a715083297b86923675a8bf66bc6af0e82a184bed186896ce1059c9bb36e26b265536f4c9f181f570a53891ec9ba4a18ffffffff02804f470c000000001976a914afd883b5bd6ae5e88b39cc692db33a6ff7182dcb88ac00ca9a3b000000001976a9145539c2a8cee228ef366cb0e8f29e0079ce03874888ac000000000100000001b36bce13ff6be1d5bd81267f9a24b2636fae20e0a1a5ca6c469d1c0fbc56a1ef000000008a4730440220592616f1af3377a3cc7bc721745cf2657131759b35c40ae03820931062c061c802203fc4adb8d0da6bd4269f8331b21793304743015a735bcbb95298ad82595f40da014104dd182dfcc9eb893ea6a0f34cec5906fbb61008b6fd669b74414d2999bf49fd21f7eb775f6175234d79cf8b9d3ac749b2bb3673462cd94641bcf9e27fe2cfc08bffffffff02c09cca64000000001976a91494006d131d49dd5c766721d7fd1db65df86c539d88ac4030a779000000001976a91421136ba0c035bb72e736975f0f9410117cf050b588ac000000000100000003d572d1e1ff09a1df9c081417f9a225c16d8e94fca3cc0d3112761e5df11f33e2000000008c49304602210097f54a78861aa913ca1b76925107a26762d7405cfeaa19983a99fb61d99e5540022100ab1cd36486fb5598d67e15e9947f17d5dab53fdd013b0e9ca8b8ffb2f7f40e9e014104b5f0dfe1370e364f516d25e1524ea5eb8cb8afe7e0f739576283ffbcd7b8307f0f79459d34ce8f6386bc725b730c26f4e5996029824e48baed2ad75d8b916fd3ffffffff7c945863dc4cdb9c2e160e3653c8ab77a33b55f061df53507c0a406a07e33e5e010000008c493046022100e7eda51ba3eff04c1e5fdd93bf4397e0e652ce38c725b687554e1dccf562fdd80221009afa588cf5347cd7f50e4c097ffabe789a3c55235d8a2fd639b21d2a73b50fb8014104a105201abcc58f7773fc5d7125344038b5ca77571173ac4b5741f9b11f8b360f4e88ac887f680af7fde035295939145d868011e0b37e077cc5e5aa2b699f6030ffffffff1b1887532137b5c7ec5c141f5cb88dbf1465c578fb6491acc4d9ffade969bdbb010000008b4830450220630795aefe55d8be9111ee802841eae06a6b4aa6fa2356eb2d00142d93263465022100e9e1dc61dbaf1a3e4e57b84c8c515cdf7687ddf0e0d7b04036105da6cfcb2845014104a105201abcc58f7773fc5d7125344038b5ca77571173ac4b5741f9b11f8b360f4e88ac887f680af7fde035295939145d868011e0b37e077cc5e5aa2b699f6030ffffffff0180b2e60e000000001976a914c865d81683bd195f92e47c583b35ed0b6a37f6a388ac000000000100000002eec8c3317b0fb6c41a6d8332523f8ef4b74c98a963a1928ca9d280aa323d9dee000000008b483045022100fd606f480b20406c8da75f4640c940e441ff57442b982ca0b45ed4a55b622522022079de38e1baf58bc0dbe12938412bdd3cd7e0be71fa5b67eeca2b5b343aede45c01410466f4f8457e681710421c89e6577db1973485f11708ff062155bb34a3ef0e4423f052c5d4eb548e79647cff8f2d272b3a8cfe9f34025bc90c60652bd41ebb2d57ffffffffeec8c3317b0fb6c41a6d8332523f8ef4b74c98a963a1928ca9d280aa323d9dee010000008c4930460221008a34de93e3081bfb6e41f79f591851895cf9cb354775966b00769f7ba9e5fc02022100a8778d15080a07721fadb4ec63229677fdc09ce919c10edf5b50de46c8199ee301410412581a35fdf35e291fc14119096a4e0c8e4f4ecf5c6ede7f727aae7d859aa1ac1ae3d5f777740998352dd76e46f777026f8b9e6a10a98bcd70c6b0ca25e3a7fbffffffff02c0e1e400000000001976a914dba62e0fbc75a167491d075cbe916d4d95fb412e88ac00b4c404000000001976a9140a1d803e44f099d3c91d4b988d3c8a9fca5d4b5d88ac0000000001000000014395f5cf12900e99dd6192b6209b49b3450e566019ed408d99104dd200d41c59000000008b483045022100a4409279bcbae239067d4533ab66f60b814a7c736e0e493138573f58733bbf1002204bed71dcb9c0e761d6c301c8358ed65081c60644a48efef6c37baf9729e6fc2701410432a325c210a4f9bb5d1522b81011a51bac208bba644eee54b2c9fbcbd748a53ca04f57acd052b247a1ace735c414958a3e1fded493f4128207e00ea058ceff87ffffffff024016750c000000001976a914cdc0d731b176c3aa8ba0ae0efdc27206afa08e7588acc0b06006000000001976a914fc80396945a751a5dbc4b8ee682993675e55533588ac000000000100000001c2ad61d37043de51542592378f2d0122d118ec78ebc4e9bb59e59a03d38432aa000000008b48304502201837ae7e28ec87d59b44e3e86848762d827363d0164b02c62f108f9abc5fc1d3022100fee05b2212e743bf8050fdd3e0cd19c8acba7fef1172678a909048a81fa18fbd014104ae588cbc9515b921f6f06e8fdcee9bb4276cfa3f7eee37afffcf3ac348e59323d959d720ffb0c4eb13cf8d8feebff39857af582181801f21bf13090c2d1fdb38ffffffff0200e1f505000000001976a914cf1071894099f6ed178a9d3f8f736db0d9b8660b88ac4062b007000000001976a9144e60b49dcc9534d4700ab2bbea5880c221cab64488ac000000000100000003743c127e0cf6a849891792a6caec54cf4ef73681f423785c97d36aea27757fed000000008b48304502200f73796a8ef4f6b152485d2b5a81e6b077f50cc3535dbcd2e6bb4a72db6f1fb6022100ef9414edf553130a761380d85361301a3dd8747a6f26c454c3cd34b3e8a40b19014104da0b3696c878d3ef54b9b5ee21e2d6e1af534c5a8f6ab1cb7af342abd717aede2556b78813c02ccb98feb3bd4a88ff99e9e4c14f371caf9b4e175af19a70588dffffffff038ff9b434fd29a959006553c0af7e0bd60ab498c15b9cc5d5900859303bed48000000008b48304502210087beb550e5c32f1550c4d152bebb78fe95569f1bf0c6896bafef0d0e4cd1a6c902207a0449332ee5f53ab5904b6e8849de39931350db8edb91ad0064f0d6d3f15b210141047aa5d5ba00d20563285e33599fb71af0657dd107c84bcdea3335ddac7b5b47f537a3a7c80ac22b295628cee7fb07938d85a440c17066a364480cc22679641671ffffffffd4a590514aeace8e06d1bb2fb4ffc67a697d69d044d37f8f50c2c5dbc946b2ad010000008b483045022050d56ecf07775c47cc6937a8b87e45b6e37e22dabc421c91e62a776d727bb084022100fc93854986173493926f1ab10958eec7c3ef6b040de91948848399fe66cb9a6d01410439c6bf25ca3de24d30353dc4a202670c4de1327fb5d3b56020bd76d51b17e4dac84001894904f2b426362b52f808901d8b2066d0eef6f753c834105eeab9bf1affffffff0240420f00000000001976a914328ea7ed3377be3c7fab0d09487309057a33f8c588ac8047a119000000001976a914c1773b304bb2f975623f01fa365fb55e86b340c488ac000000000100000001c20a545d9df9f6b0f58eae2eec1cfe76ddb49d705a11dcb44a24cb464197e7e3010000008c493046022100b422fdc92aa6a86af349b826c033ecc2139ddf79ad7d215a0c00701cde4ce1d3022100a1017fc5c88b70900b56bbfb67eb0f45e47a4b4d28f63674fc7dff7f6fb1328f0141043f6b33e5101c289c5c760cb35f77c43ab8f4f2ebce622b68f7105e166ee7ceb2d3a8562a094038452d702c0ddde1fd089bceb84c0eb8c4584d116c040c49f6b3ffffffff02808d5b00000000001976a91420782923b21b1dd5b6b64d5069f7b01168288e0b88ac00e1f505000000001976a914ae214baa6cd56a0d50c9b60aea2352a56236207688ac0000000001000000016a0581837861fbce6253b8e950eb606e0ba879bf9e6a5cd9cadb919fd376be38000000008a47304402206c7308a8fa8d45c082da032880270c10d436d2a4623ba6e13819d45eecf0f3b90220356f4e9855a101487b680d0b4e69b10c509015293236f2cfbaf9da6cb6791466014104cfd5868f564bae61bf22479e8d22e030fbdbf9a01a9a0b61ddfb580a9552b47b15f8a28e7c40b8fe73d6b9c0e0cdd1527266602b327dcc272bd8c1a33b87e4deffffffff0248647800000000001976a914ceb552bdf23d002aed04c317c92cf8987e550df988ac40420f00000000001976a914586ce63c59b47a3ad08ccac6f132dc04ccbea0e288ac00000000" id="blockfortransaction1by1"><br>
+	Affichage de la chaine complète des transactions à traiter [on a enlevé le numéro de version et le lockTime final du bloc de transaction] : <span type="text" id="chainetransaction1by1"></span><br> 
+	Inputs : <span type="text" id="transactionsinputs"></span><br>
+	Outputs : <span type="text" id="transactionsoutputs"></span><br>
+	<button id="transactions1by1">désérialiser la transaction</button>
+</section>
+
+<script>
+
+function extractiontransaction1by1(blockfortransaction1by1, idtransaction, pos) {	
+	transactions1by1 = extractiontransaction(blockfortransaction1by1).transactions	
+	ltransactions1by1 = transactions1by1.length
+//	console.log("block complet encapsulé : " + transactions1by1)
+//	console.log("longueur du block transactions encapsulé: " + ltransactions1by1)	
+		
+		    
+	positi = lVersion	    /* on décapsule version et locktime */
+//	console.log("positi : " + positi)
+//	console.log("sur longueur  : " + (ltransactions1by1 - lLockTime - lVersion))
+	transactions1by1 = transactions1by1.substr(positi, (ltransactions1by1 - lLockTime - lVersion)) /* on enlève le locktime et la version */
+//	console.log("block complet décapsulé :" + transactions1by1)
+
+	positi = pos
+	/* si positi = pso = 0  on rédémarre à 0 */
+
+	/* récupération du nombre d'inputs */
+	
+	NbrInput = parseInt(transactions1by1.substr(positi, lIcount),16)
+	positi = positi + lIcount	
+//	console.log("positi " + positi)
+	
+//	console.log("Nombre Inputs :" + NbrInput)
+
+	
+	var TabInputs = new Array(NbrInput) 
+	
+	for (i=0; i < NbrInput; i++){
+       TabInputs[i] = new Array('TXID', 'VOUT', 'ScriptSigSize', 'ScriptSig','Sequence')	
+	}
+	console.log("Tableau des Inputs au départ : " + TabInputs)	
+	
+	for (j=0; j < NbrInput; j++) {
+	TXID = transactions1by1.substr(positi, lTXID).toUpperCase()
+	TabInputs[j][0] = TXID
+	positi = positi + lTXID
+//	console.log("positi " + positi)
+
+	VOUT = transactions1by1.substr(positi, lVOUT).toUpperCase()
+	TabInputs[j][1] = VOUT
+	positi = positi + lVOUT
+//	console.log("positi " + positi)
+
+										/* on extrait la taille du ScriptSig */
+	TailleScriptSigHexa = transactions1by1.substr(positi,lScriptSigSize)
+//	console.log("TailleScriptSigHexa : " + TailleScriptSigHexa)	
+	TailleScriptSig = parseInt(transactions1by1.substr(positi,lScriptSigSize),16) * 2
+//	console.log("TailleScriptSigDecimal: " + TailleScriptSig)	 
+	TabInputs[j][2] = TailleScriptSig	
+	positi = positi + lScriptSigSize
+//	console.log("positi " + positi)
+ 
+	
+	Signature = transactions1by1.substr(positi, TailleScriptSig).toUpperCase() 
+	TabInputs[j][3] = Signature
+	positi = positi + TailleScriptSig
+//	console.log("positi " + positi)
+
+	Sequence = transactions1by1.substr(positi, lSequence).toUpperCase()
+	TabInputs[j][4] = Sequence
+	positi = positi + lSequence
+//	console.log("positi " + positi)
+	}
+		
+	console.log("Tableau des Inputs à la fin : " + TabInputs)
+	
+	propreinput = ""
+	for (k=1; k <= NbrInput; k++) {
+	propreinput = propreinput + "Input n°" + k 
+	propreinput = propreinput + " - TXID : " + TabInputs[k-1][0]
+	propreinput = propreinput + " - VOUT : " + TabInputs[k-1][1]		
+	propreinput = propreinput + " - SCRIPTSIG  : " + TabInputs[k-1][3]		
+	propreinput = propreinput + "<BR>" 		
+	}
+	
+//	console.log("positi " + positi)
+	
+	/* récupération du nombre d'outputs */
+	noutput = parseInt(transactions1by1.substr(positi, lOcount),16) 
+//	console.log("Nombre Ouputs :" + noutput)
+	positi = positi + lOcount
+//	console.log("positi " + positi)
+	
+	var TabOutputs = new Array(noutput) 
+	for (i=0; i < noutput; i++){
+       TabOutputs[i] = new Array('VALUE', 'ScriptPubKeySize', 'ScriptPubKey')	
+	}
+	console.log("Tableau des Outputs au départ : " + TabOutputs)	
+	
+	for (j=0; j < noutput; j++) {
+	OValue = transactions1by1.substr(positi, lOValue)
+	TabOutputs[j][0] = OValue
+	positi = positi + lOValue
+//	console.log("positi " + positi)
+
+										/* on extrait la taille du ScriptpubKey */
+	
+	TailleScriptpubKey = transactions1by1.substr(positi,lPubKeySize)
+//	console.log("TailleScriptpubKey : " + TailleScriptpubKey)	
+	TailleScriptpubKeydec = parseInt(transactions1by1.substr(positi,lPubKeySize),16) * 2
+//	console.log("TailleScriptSigDecimal: " + TailleScriptpubKeydec)	 
+
+	TabOutputs[j][1] = TailleScriptpubKeydec	
+
+	positi = positi + lPubKeySize
+//	console.log("positi " + positi)
+ 	
+	OSPubKey = transactions1by1.substr(positi, TailleScriptpubKeydec).toUpperCase() 
+	TabOutputs[j][2] = OSPubKey
+	positi = positi + TailleScriptpubKeydec
+//	console.log("positi " + positi)
+
+//	Sequence = transactions1by1.substr(positi, lSequence).toUpperCase()
+//	TabInputs[j][3] = Sequence
+//	positi = positi + lSequence
+//	console.log("positi finale " + positi)
+//	positi = positi + 8
+//	console.log("position finale " + positi)
+	}
+		
+	console.log("Tableau des Outputs à la fin : " + TabOutputs)
+	
+	propreoutput = ""
+	for (k=1; k <= noutput; k++) {
+	propreoutput = propreoutput + "Output n°" + k 
+	/* extraire la valeur */
+	depense = 'Ox' + TabOutputs[k-1][0]
+	depensehexa = convertHexaLittleEndianToHexa(depense)
+	depensebc = parseInt(depensehexa, 16) / 10 **8
+	propreoutput = propreoutput + " - Valeur Output en bitcoin : " + depensebc
+	propreoutput = propreoutput + " - SCRIPTPUBKEY  : " + TabOutputs[k-1][2]		
+	propreoutput = propreoutput + "<BR>" 		
+	}
+
+
+	return {tabinputs: propreinput,taboutputs : propreoutput, transactions: transactions1by1, positionfinale : positi}
+	}
+
+	document.getElementById('transactions1by1').addEventListener('click', event => {
+	blockfortransaction1by1 = document.getElementById('blockfortransaction1by1').value
+	BlockDeserialise = extractiontransaction1by1(blockfortransaction1by1,1,0)
+		
+	document.getElementById('chainetransaction1by1').innerHTML = BlockDeserialise.transactions
+	document.getElementById('transactionsinputs').innerHTML = BlockDeserialise.tabinputs	
+	document.getElementById('transactionsoutputs').innerHTML = BlockDeserialise.taboutputs	
+
+})
+
+</script>
+		
+
+<section>	
+	<h3>Etant donné un Bloc désérialiser Toutes les transactions (hors coinbase)</h3>
+	Bloc :<input type="textarea" value="010000009500c43a25c624520b5100adf82cb9f9da72fd2447a496bc600b0000000000006cd862370395dedf1da2841ccda0fc489e3039de5f1ccddef0e834991a65600ea6c8cb4db3936a1ae31439910d01000000010000000000000000000000000000000000000000000000000000000000000000ffffffff0704b3936a1a017cffffffff01403d522a01000000434104563053b8900762f3d3e8725012d617d177e3c4af3275c3265a1908b434e0df91ec75603d0d8955ef040e5f68d5c36989efe21a59f4ef94a5cc95c99794a84492ac000000000100000001544bb26a50502ef11c745f1127b29a47856b3ecd9a1b6c540a66493d5fbf0046010000008b483045022100c9e35aa55af5ac98cb67c4db7cf3d3f128753c4698f5d25ca0cdc3decd0c46be02204d6dfe89bd3fe88a32d47a44c0ab3ab60d87b27b90106f1b2f9f67c9c60cc80c01410449b8d933f97a8c4fe6ce962ee2abff8a81d8cfc5e0870a50cea76c50d04addf2df09331c4a47cdc3bc27a628e766ef5d01f28ee147ed21723b5ff3a62ed8da3effffffff024094ef03010000001976a9146c8de651f8b92f87ff43fb9732babec784bdb6f588acc05d1626000000001976a9144f006767feebf6438aaf51ef86ae4286a1c571b988ac000000000100000001c03533907c967249c5dc80d266e6e65555581e6328f6a3859164bfbb1eb0bc17000000008b483045022100a616082b724043758a4732dae5461783cb48ccf1b36a7f98d41f3f5f8db577f80220084df7afc2c912c3ef23ea43cfec651ba97ee6c4e4220c0f58b78f374626bdfb01410412aebcb2c5d5625c138c9cdd318ae04a103002b0d1b1541d72cd51dc016bfec885e7b93d73375903acb2731cdb7790b1d969db2684646e6fbeabb0559b6513c1ffffffff024094ef03010000001976a914fa91e22c8a2a4d1fa592de1cf7aa8f958867a1d288acc05d1626000000001976a91452fc9e7e1b8be3a61fe20381cb343e62eac105cb88ac0000000001000000015f71a19a74e9f5d202b9dd552471f2e8a24fd883a76f23455f1e4b738fd2c20f000000008b483045022100b6f858814dbf6a6d2dc71701028361a9e9ef2e2c52e5898f1bfccfad145ccda7022046973784a8de9007a52576070621c29e92f91a332960a5fb7ded81973d2e7be4014104dd2755d0a38af359659614530bd25e35fcb3d215b1fc41038beb495ea5db774e71a2f307652774b79c5dfa8fdccff372e61a27a177c6b157cc22beec361cc387ffffffff0200688909000000001976a91473b81e77969678ba046c79b44829f769ff2e00f188ac40660301000000001976a914597588d391674d08c2cfc35015db9487922aba5288ac000000000100000001d1371f11cc10390fa0361f3e6b2e25e48c2f69040bf7d400d1b2ecf97b8461f0000000008b483045022061c083b63887398f85a527c8e256ee3498bc50fa6bc85d90ebf63c49ad406836022100884ffd73107b1129f378bfa29858d1e1c89f89922260a99a32a813572e3884460141044b32f0631083e1cc5f0401807abc7a12a715083297b86923675a8bf66bc6af0e82a184bed186896ce1059c9bb36e26b265536f4c9f181f570a53891ec9ba4a18ffffffff02804f470c000000001976a914afd883b5bd6ae5e88b39cc692db33a6ff7182dcb88ac00ca9a3b000000001976a9145539c2a8cee228ef366cb0e8f29e0079ce03874888ac000000000100000001b36bce13ff6be1d5bd81267f9a24b2636fae20e0a1a5ca6c469d1c0fbc56a1ef000000008a4730440220592616f1af3377a3cc7bc721745cf2657131759b35c40ae03820931062c061c802203fc4adb8d0da6bd4269f8331b21793304743015a735bcbb95298ad82595f40da014104dd182dfcc9eb893ea6a0f34cec5906fbb61008b6fd669b74414d2999bf49fd21f7eb775f6175234d79cf8b9d3ac749b2bb3673462cd94641bcf9e27fe2cfc08bffffffff02c09cca64000000001976a91494006d131d49dd5c766721d7fd1db65df86c539d88ac4030a779000000001976a91421136ba0c035bb72e736975f0f9410117cf050b588ac000000000100000003d572d1e1ff09a1df9c081417f9a225c16d8e94fca3cc0d3112761e5df11f33e2000000008c49304602210097f54a78861aa913ca1b76925107a26762d7405cfeaa19983a99fb61d99e5540022100ab1cd36486fb5598d67e15e9947f17d5dab53fdd013b0e9ca8b8ffb2f7f40e9e014104b5f0dfe1370e364f516d25e1524ea5eb8cb8afe7e0f739576283ffbcd7b8307f0f79459d34ce8f6386bc725b730c26f4e5996029824e48baed2ad75d8b916fd3ffffffff7c945863dc4cdb9c2e160e3653c8ab77a33b55f061df53507c0a406a07e33e5e010000008c493046022100e7eda51ba3eff04c1e5fdd93bf4397e0e652ce38c725b687554e1dccf562fdd80221009afa588cf5347cd7f50e4c097ffabe789a3c55235d8a2fd639b21d2a73b50fb8014104a105201abcc58f7773fc5d7125344038b5ca77571173ac4b5741f9b11f8b360f4e88ac887f680af7fde035295939145d868011e0b37e077cc5e5aa2b699f6030ffffffff1b1887532137b5c7ec5c141f5cb88dbf1465c578fb6491acc4d9ffade969bdbb010000008b4830450220630795aefe55d8be9111ee802841eae06a6b4aa6fa2356eb2d00142d93263465022100e9e1dc61dbaf1a3e4e57b84c8c515cdf7687ddf0e0d7b04036105da6cfcb2845014104a105201abcc58f7773fc5d7125344038b5ca77571173ac4b5741f9b11f8b360f4e88ac887f680af7fde035295939145d868011e0b37e077cc5e5aa2b699f6030ffffffff0180b2e60e000000001976a914c865d81683bd195f92e47c583b35ed0b6a37f6a388ac000000000100000002eec8c3317b0fb6c41a6d8332523f8ef4b74c98a963a1928ca9d280aa323d9dee000000008b483045022100fd606f480b20406c8da75f4640c940e441ff57442b982ca0b45ed4a55b622522022079de38e1baf58bc0dbe12938412bdd3cd7e0be71fa5b67eeca2b5b343aede45c01410466f4f8457e681710421c89e6577db1973485f11708ff062155bb34a3ef0e4423f052c5d4eb548e79647cff8f2d272b3a8cfe9f34025bc90c60652bd41ebb2d57ffffffffeec8c3317b0fb6c41a6d8332523f8ef4b74c98a963a1928ca9d280aa323d9dee010000008c4930460221008a34de93e3081bfb6e41f79f591851895cf9cb354775966b00769f7ba9e5fc02022100a8778d15080a07721fadb4ec63229677fdc09ce919c10edf5b50de46c8199ee301410412581a35fdf35e291fc14119096a4e0c8e4f4ecf5c6ede7f727aae7d859aa1ac1ae3d5f777740998352dd76e46f777026f8b9e6a10a98bcd70c6b0ca25e3a7fbffffffff02c0e1e400000000001976a914dba62e0fbc75a167491d075cbe916d4d95fb412e88ac00b4c404000000001976a9140a1d803e44f099d3c91d4b988d3c8a9fca5d4b5d88ac0000000001000000014395f5cf12900e99dd6192b6209b49b3450e566019ed408d99104dd200d41c59000000008b483045022100a4409279bcbae239067d4533ab66f60b814a7c736e0e493138573f58733bbf1002204bed71dcb9c0e761d6c301c8358ed65081c60644a48efef6c37baf9729e6fc2701410432a325c210a4f9bb5d1522b81011a51bac208bba644eee54b2c9fbcbd748a53ca04f57acd052b247a1ace735c414958a3e1fded493f4128207e00ea058ceff87ffffffff024016750c000000001976a914cdc0d731b176c3aa8ba0ae0efdc27206afa08e7588acc0b06006000000001976a914fc80396945a751a5dbc4b8ee682993675e55533588ac000000000100000001c2ad61d37043de51542592378f2d0122d118ec78ebc4e9bb59e59a03d38432aa000000008b48304502201837ae7e28ec87d59b44e3e86848762d827363d0164b02c62f108f9abc5fc1d3022100fee05b2212e743bf8050fdd3e0cd19c8acba7fef1172678a909048a81fa18fbd014104ae588cbc9515b921f6f06e8fdcee9bb4276cfa3f7eee37afffcf3ac348e59323d959d720ffb0c4eb13cf8d8feebff39857af582181801f21bf13090c2d1fdb38ffffffff0200e1f505000000001976a914cf1071894099f6ed178a9d3f8f736db0d9b8660b88ac4062b007000000001976a9144e60b49dcc9534d4700ab2bbea5880c221cab64488ac000000000100000003743c127e0cf6a849891792a6caec54cf4ef73681f423785c97d36aea27757fed000000008b48304502200f73796a8ef4f6b152485d2b5a81e6b077f50cc3535dbcd2e6bb4a72db6f1fb6022100ef9414edf553130a761380d85361301a3dd8747a6f26c454c3cd34b3e8a40b19014104da0b3696c878d3ef54b9b5ee21e2d6e1af534c5a8f6ab1cb7af342abd717aede2556b78813c02ccb98feb3bd4a88ff99e9e4c14f371caf9b4e175af19a70588dffffffff038ff9b434fd29a959006553c0af7e0bd60ab498c15b9cc5d5900859303bed48000000008b48304502210087beb550e5c32f1550c4d152bebb78fe95569f1bf0c6896bafef0d0e4cd1a6c902207a0449332ee5f53ab5904b6e8849de39931350db8edb91ad0064f0d6d3f15b210141047aa5d5ba00d20563285e33599fb71af0657dd107c84bcdea3335ddac7b5b47f537a3a7c80ac22b295628cee7fb07938d85a440c17066a364480cc22679641671ffffffffd4a590514aeace8e06d1bb2fb4ffc67a697d69d044d37f8f50c2c5dbc946b2ad010000008b483045022050d56ecf07775c47cc6937a8b87e45b6e37e22dabc421c91e62a776d727bb084022100fc93854986173493926f1ab10958eec7c3ef6b040de91948848399fe66cb9a6d01410439c6bf25ca3de24d30353dc4a202670c4de1327fb5d3b56020bd76d51b17e4dac84001894904f2b426362b52f808901d8b2066d0eef6f753c834105eeab9bf1affffffff0240420f00000000001976a914328ea7ed3377be3c7fab0d09487309057a33f8c588ac8047a119000000001976a914c1773b304bb2f975623f01fa365fb55e86b340c488ac000000000100000001c20a545d9df9f6b0f58eae2eec1cfe76ddb49d705a11dcb44a24cb464197e7e3010000008c493046022100b422fdc92aa6a86af349b826c033ecc2139ddf79ad7d215a0c00701cde4ce1d3022100a1017fc5c88b70900b56bbfb67eb0f45e47a4b4d28f63674fc7dff7f6fb1328f0141043f6b33e5101c289c5c760cb35f77c43ab8f4f2ebce622b68f7105e166ee7ceb2d3a8562a094038452d702c0ddde1fd089bceb84c0eb8c4584d116c040c49f6b3ffffffff02808d5b00000000001976a91420782923b21b1dd5b6b64d5069f7b01168288e0b88ac00e1f505000000001976a914ae214baa6cd56a0d50c9b60aea2352a56236207688ac0000000001000000016a0581837861fbce6253b8e950eb606e0ba879bf9e6a5cd9cadb919fd376be38000000008a47304402206c7308a8fa8d45c082da032880270c10d436d2a4623ba6e13819d45eecf0f3b90220356f4e9855a101487b680d0b4e69b10c509015293236f2cfbaf9da6cb6791466014104cfd5868f564bae61bf22479e8d22e030fbdbf9a01a9a0b61ddfb580a9552b47b15f8a28e7c40b8fe73d6b9c0e0cdd1527266602b327dcc272bd8c1a33b87e4deffffffff0248647800000000001976a914ceb552bdf23d002aed04c317c92cf8987e550df988ac40420f00000000001976a914586ce63c59b47a3ad08ccac6f132dc04ccbea0e288ac00000000" id="blockfortransactionall"><br>
+	<strong>Désérialisation complète :</strong> <span type="text" id="chainetransactionall"></span><br> 
+	<button id="transactionsall">désérialiser toutes la transaction</button>
+</section>
+
+<script>
+
+	function extractiontransactionall(blockfortransactionall) {	
+/* extraire le nombre de transactions */
+	Nbrtx = extractiontransaction(blockfortransactionall).NbrTX
+//	console.log("Nbr de transactions extractiontransactionall : " + Nbrtx)
+/* tant que on a des transactions à traiter */
+		positionfin = 0
+		chainesortie = "" 
+		for (let compteur = 1 ; compteur <= Nbrtx ; compteur++) { /* Désérialiser */
+			  
+			  
+			  pos = positionfin
+			  
+			  VariableBlock = 'BlockDeserialiseAll' + 1	
+			  VariableBlock = extractiontransaction1by1(blockfortransactionall, compteur, pos)	
+			  
+			  			  
+			  TransactionsInput= VariableBlock.tabinputs
+//			  console.log("Inputs de la transaction " + compteur + " : " + TransactionsInput)
+			  TransactionsOutput= VariableBlock.taboutputs
+//			  console.log("Outputs de la transaction " + compteur + " : " + TransactionsOutput)
+			   
+			  chainesortie =  chainesortie + "<br>" + "<I><B>Transaction n° </I></B>" + compteur + " : " + "<BR>" /* construction de la sortie */	
+			  chainesortie =  chainesortie + TransactionsInput
+			  chainesortie =  chainesortie + TransactionsOutput
+			  chainesortie =  chainesortie + "<br><hr>"
+			  
+			  positionfin = VariableBlock.positionfinale + 16 /* car il ya un lock à la fin des outputs */    		  
+			  			  
+	}
+	return {proprechaine : chainesortie}
+}
+
+
+	document.getElementById('transactionsall').addEventListener('click', event => {
+	blockfortransactionall = document.getElementById('blockfortransactionall').value
+	document.getElementById('chainetransactionall').innerHTML = extractiontransactionall(blockfortransactionall).proprechaine
+})
+
+</script>
+
+
+		
+
+</body>
+</html>
