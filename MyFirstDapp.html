@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+
+<html lang="fr">
+
+<head>
+ <meta charset="UTF-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1.0">
+ <meta http-equiv="X-UA-Compatible" content="ie=edge">
+ <title>Première DApp 1</title>
+</head>
+<body>
+ <h1>Quelques infos</h1>
+ <script src="https://cdn.ethers.io/scripts/ethers-v4.min.js"
+       charset="utf-8"
+       type="text/javascript">
+ </script>
+
+<!---
+<script src="application.js"
+       charset="utf-8"
+       type="text/javascript">
+ </script>
+---->
+
+
+<script>
+async function createMetaMaskDapp() {
+ try {
+   // Demande à MetaMask l'autorisation de se connecter
+   const addresses = await ethereum.enable();
+   const address = addresses[0]
+   // Connection au noeud fourni par l'objet web3
+   const provider = new ethers.providers.Web3Provider(ethereum);
+   dapp = { address, provider };
+   console.log(dapp)
+ } catch(err) {
+   // Gestion des erreurs
+   console.error(err);
+ }
+}
+
+</script>
+
+<button onclick="createMetaMaskDapp()">Connect to MetaMask first</button>
+
+<section>
+<h3>Informations</h3>
+  Balance (voir console log) <span type="text" id="balance"></span><br>
+  Bloc (voir console log) <span type="text" id="bloc"></span><br>
+  Gaz (voir console log) <span type="text" id="gaz"></span><br>
+	<button id="info">infos</button>
+</section>
+
+<script>
+
+async function balance(){
+dapp.provider.getBalance(dapp.address).then((balance) => {
+let etherString = ethers.utils.formatEther(balance);
+console.log("Balance: " + etherString);	
+});
+
+}
+
+
+async function block() {
+	 dapp.provider.getBlockNumber().then((blockNumber) => {
+	 let blockNumberM1 = blockNumber -1 ;  // on prend le bloc d'avant celui qui est courant ..
+    console.log("Dernier Bloc: " + blockNumberM1);
+	});
+}
+
+async function PriduGaz() {
+	 dapp.provider.getGasPrice().then((gasPrice) => {
+    gasPriceString = gasPrice.toString();
+    console.log("Prix du gaz: " + gasPriceString);
+	});
+}
+
+
+document.getElementById('info').addEventListener('click', event => {
+document.getElementById('balance').innerHTML = balance()
+document.getElementById('bloc').innerHTML = block()
+document.getElementById('gaz').innerHTML = PriduGaz()
+//balance()
+//block()
+//PriduGaz()
+})
+
+
+</script>																																																												
+
+
+																																																																																																																																				
+
+
+ </body>
+</html>
