@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+ <meta charset="UTF-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1.0">
+ <meta http-equiv="X-UA-Compatible" content="ie=edge">
+ <title>IPFS</title>
+</head>
+<body>
+ <h2>Interagir avec le noeud depuis une page web</h2>
+ <script src="https://unpkg.com/ipfs-http-client@29.1.1/dist/index.min.js"></script>
+ 
+<section>
+<h3 align="center">Les noeuds....</h3>
+Visualiser La liste des dix premiers pairs : <span type="text" id="list"></span><br>
+<button id="info">noeuds</button>
+</section>
+
+<section>
+<h3 align="center">Tester la connectivité d'un noeud....</h3>
+<input type="text" value="12D3KooWA5Z3oF7YrANAuM8K2CVPj9P8K9dqV99qSzGZYCbKbYr5" length="40" maxlength="70" id="Pair"><button onclick="ping()">Ping ....</button><br>
+Connectivité => <span type="text" id="connectivity"></span>
+</section>
+
+
+ 
+<script>
+const ipfs = window.IpfsHttpClient('localhost', '5001')
+
+async function ListePaires() {
+	ipfs.swarm.addrs().then(addrs=> {
+	let list = "<ol>"
+	for (let i=0; i < addrs.length && i < 10; i ++)	{
+	console.log("Adresse Pair : " + addrs[i].id._idB58String);
+//	let Pair = addrs[i].id._idB58String
+//	list += "<li>" + Pair + " " + '<button onclick=ping($Pair)>Ping</button>' + "</li>" 	
+	list += "<li>" + addrs[i].id._idB58String + "</li>"	
+	}	
+	list+="</ol>"
+	document.getElementById('list').innerHTML = list
+})
+}
+
+document.getElementById('info').addEventListener('click', event => {
+	ListePaires()
+})
+
+
+
+
+async function ping() {
+  let Peer = document.getElementById("Pair").value;  
+  let resultat = await ipfs.ping(Peer) 
+  for (const res of resultat){
+  		if (res.time) {
+  		console.log(`Pong reçu : time=${res.time} ms`)
+  		document.getElementById('connectivity').innerHTML = "Pong reçu : " +  res.time + " ms"
+  		} else {
+   	console.log(res.text)  
+	document.getElementById('connectivity').innerHTML = res.text}
+   	
+  }
+ }
+
+
+    
+  
+
+
+</script>
+ 
+ </body>
+</html>
