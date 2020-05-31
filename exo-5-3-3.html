@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+ <meta charset="UTF-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1.0">
+ <meta http-equiv="X-UA-Compatible" content="ie=edge">
+ <title>exo 5.3.3</title>
+</head>
+<body>
+ <h2>Interaction avec un noeud IPFS</h2>
+ <script src="https://unpkg.com/ipfs-http-client@29.1.1/dist/index.min.js"></script>
+ 
+<section>
+<h3 align="center">Ecrire une fonction pour publier une chaîne sur IPFS</h3>
+Saisissez un message : <input type="text" id="Chaine" value="Alyra c'est chouette !" maxlength="70"><br>
+Hash => <span type="text" id="resultat"></span><br>
+<button id="publication">publication</button>
+</section>
+
+<section>
+<h3 align="center">Et retour</h3>
+<input type="text" value="QmUuxQJEcn5SbKrSCMqPNxxTiHj9MEYJTiKYwGhqVhzHUM" length="70" maxlength="140" id="hash"><button onclick="afficher()">Afficher ....</button><br>
+Hash => <span type="text" id="hashback"></span><br>
+Contenu => <span type="text" id="message"></span><br>
+</section>
+
+
+ 
+<script>
+const ipfs = window.IpfsHttpClient('localhost', '5001')
+
+
+async function PublicationChaine() {
+ 	let Chaine = document.getElementById("Chaine").value
+ 	let result = await ipfs.add(new ipfs.types.Buffer.from(Chaine.toString()))
+ 	for (const res of result){
+	// console.log(res) 	
+ 	console.log(res.hash)
+ 	document.getElementById('resultat').innerHTML = res.hash
+ 		} 
+}
+
+
+document.getElementById('publication').addEventListener('click', event => {
+	PublicationChaine()
+})
+
+
+
+function afficher() {
+ let hash = document.getElementById("hash").value
+  ipfs.cat(hash, function(err, res) {
+    if(err || !res) return console.error("ipfs cat erreur", err, res);
+    if(res.readable) {
+      console.error('unhandled: cat result is a pipe', res);
+    } else {
+      document.getElementById('hashback').innerText=hash;
+      document.getElementById('message').innerText=res;
+    }
+  })
+ }
+
+
+
+
+    
+  
+
+
+</script>
+ 
+ </body>
+</html>
